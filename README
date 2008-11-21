@@ -1,0 +1,69 @@
+
+MobileFilter::WURFLMobile is an implementation of the Apache filter in Perl, the propose of this filter is to help to manage the mobile web solutions. This solutions is based to WURFL solutions.
+A good point to start is: <http://wurfl.sourceforge.net>
+
+I don't try to install in Win32 platform, but I suppose it's not so hard to do it.
+
+PREREQUISITES
+
+This suite requires Perl 5; I tested it only under Perl 5.8.8.
+
+Text::LevenshteinXS requires 
+mod_perl 2.0 for Apache 2.X.X
+CGI-Lite
+And Apache 2.x.x
+WURFL.xml
+
+Knowledge about Apache configuration
+
+INSTALLATION
+
+You need install and configure Apache 2.x
+
+Before you start to use my application you need to install mod_per 2.x and configure your apache, this is the right link:
+
+Download - http://perl.apache.org/download/index.html
+Documentation - http://perl.apache.org/docs/index.html
+
+The second step is to install the other packages, you can found here:
+
+http://search.cpan.org/
+
+Now you can start to install my package:
+
+1) Create into you Apache 2.x home a directory call MobileFilter
+
+2) Put into MobileFilter directory the file WURFLMobile.pm
+
+3) open the file conf/httpd.conf and add this few commands:
+
+PerlSetEnv MOBILE_HOME <APACHE_DIRECTORY>/MobileFilter<Files ~ "\.mobile">        PerlInputFilterHandler MobileFilter::WURFLFilter </Files>
+
+
+4) WURFLMobile.config in this file you can say to the FILTER how it need to work. This is the step:
+
+a) configure the capability you need to use, for example: 
+
+		<capability>max_image_height</capbility>
+b)
+
+5) Download WURFL.xml here: http://wurfl.sourceforge.net/wurfl.zip
+
+DOCUMENTATION
+
+http://www.idelfuschini.it/index.php/apache-mobile-filter.html
+
+AVAILABILITY
+
+The latest version of MobileFilter::WURFLMobile is available from the
+CPAN <http://search.cpan.org/> 
+
+
+COPYRIGHT
+
+Copyright 2008 Idel Fuschini <idel.fuschini@gmail.com>
+
+This package is free software and is provided "as is" without express
+or implied warranty.  You can redistribute it and/or modify it under 
+the same terms as Perl itself.
+

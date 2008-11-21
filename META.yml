@@ -1,0 +1,27 @@
+--- #YAML:1.0
+name:               Apache2-WURFLFilter
+version:            0.2
+abstract:           ~
+author:
+    - Idel Fuschini (ifuschini@cpan.org)
+license:            unknown
+distribution_type:  module
+configure_requires:
+    ExtUtils::MakeMaker:  0
+requires:
+    Apache2::Const:       0
+    Apache2::Filter:      0
+    Apache2::RequestRec:  0
+    Apache2::RequestUtil:  0
+    APR::Table:           0
+    CGI::Cookie:          0
+    LWP::Simple:          0
+    Text::LevenshteinXS:  0
+no_index:
+    directory:
+        - t
+        - inc
+generated_by:       ExtUtils::MakeMaker version 6.48
+meta-spec:
+    url:      http://module-build.sourceforge.net/META-spec-v1.4.html
+    version:  1.4

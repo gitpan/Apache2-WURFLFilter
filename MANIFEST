@@ -1,0 +1,7 @@
+.DS_Store
+lib/Apache2/WURFLFilter.pm
+Makefile.PL
+MANIFEST
+README
+WURFLFilterConfig.xml
+META.yml                                 Module meta-data (added by MakeMaker)
