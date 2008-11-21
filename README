@@ -1,8 +1,7 @@
 
-MobileFilter::WURFLMobile is an implementation of the Apache filter in Perl, the propose of this filter is to help to manage the mobile web solutions. This solutions is based to WURFL solutions.
+Apache2::WURFLMobile is an implementation of the Apache filter in Perl, the propose of this filter is to help to manage the mobile web solutions. This solutions is based to WURFL solutions.
 A good point to start is: <http://wurfl.sourceforge.net>
-
-I don't try to install in Win32 platform, but I suppose it's not so hard to do it.
+I don't try to install in Win32 platform, but I suppose there isn't problem.
 
 PREREQUISITES
 
@@ -31,13 +30,20 @@ http://search.cpan.org/
 
 Now you can start to install my package:
 
+
 1) Create into you Apache 2.x home a directory call MobileFilter
+
 
 2) Put into MobileFilter directory the file WURFLMobile.pm
 
+
 3) open the file conf/httpd.conf and add this few commands:
 
-PerlSetEnv MOBILE_HOME <APACHE_DIRECTORY>/MobileFilter<Files ~ "\.mobile">        PerlInputFilterHandler MobileFilter::WURFLFilter </Files>
+PerlSetEnv MOBILE_HOME <APACHE_DIRECTORY>/MobileFilter
+
+<Files ~ "\.mobile">    
+    PerlInputFilterHandler MobileFilter::WURFLFilter 
+</Files>
 
 
 4) WURFLMobile.config in this file you can say to the FILTER how it need to work. This is the step:
@@ -55,7 +61,7 @@ http://www.idelfuschini.it/index.php/apache-mobile-filter.html
 
 AVAILABILITY
 
-The latest version of MobileFilter::WURFLMobile is available from the
+The latest version of Apache2::WURFLMobile is available from the
 CPAN <http://search.cpan.org/> 
 
 

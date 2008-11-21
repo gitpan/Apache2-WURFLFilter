@@ -27,7 +27,7 @@ package Apache2::WURFLFilter;
   # 
 
   use vars qw($VERSION);
-  $VERSION= 0.2;
+  $VERSION= 0.3;
   my %Capability;
   my %Array_fb;
   my %Array_id;
@@ -175,10 +175,11 @@ sub parseWURFLFile {
 			    #print "eccomi $val\n";
 			($null,$name,$null2,$value,$null3,$fb)=split(/\"/, $record);
 			if ($id) {
-				if ($name) {
-					if ($value) {
-				$Array_DDRcapability{"$val|$name"}=$value;
-				#print "Array_DDRcapability{\"$id|$name\"}=$value\n"; 
+                if ($Capability{$capability}) {			
+					if ($name) {
+						if ($value) {
+							$Array_DDRcapability{"$val|$name"}=$value;
+						}
 					}
 				}
 			}
@@ -466,7 +467,7 @@ sub handler    {
   1; 
 =head1 NAME
 
-Apache2::WURFLFilter - is Apache Mobile Filter that permit to redirect the device to the aproprate URL
+Apache2::WURFLFilter - is Apache Mobile Filter that permit to redirect the device to the correct mobile content you have definded
 
 
 =head1 COREQUISITES
@@ -481,8 +482,9 @@ So I thought it was  to make something simply that can identify a browser and re
 
 If you are a  programmer and you want to develop a simple mobile solution you can use this module to pass few Wurfl Capabilities information to your application. In this case it's not important with which technology you want to develop your site and you don't need to implement new methods to how recognise the devices.
 
+For more details: http://www.idelfuschini.it/
+
 NOTE: this software need wurfl.xml from this site: http://wurfl.sourceforge.net
-=pod SCRIPT CATEGORIES
-Web
+
 
 =cut
