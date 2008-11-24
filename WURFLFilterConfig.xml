@@ -8,15 +8,18 @@
 	 <capability>resolution_width</capability>
 	 <capability>resolution_height</capability>
   </CapabilityList>
-  <IntelliSwitch>false</IntelliSwitch>
+  <IntelliSwitch>true</IntelliSwitch>
   <MobileVersionUrl>/cgi-bin/perl.html</MobileVersioneUrl>
   <FullBrowserUrl>http://www.ilsole24ore.com</FullBrowserUrl>
   <IntelliRiderectUrl>
-	 <IntelliUrl widthsize="128">/128</IntelliUrl>
-	 <IntelliUrl widthsize="176">/176</IntelliUrl>
-	 <IntelliUrl widthsize="208">/208</IntelliUrl>
-	 <IntelliUrl widthsize="240">/240</IntelliUrl>
-	 <IntelliUrl widthsize="320">/320</IntelliUrl>
+	 <XHTMLUrl widthsize="128">/128</XHTMLUrl>
+	 <XHTMLUrl widthsize="176">/176</XHTMLUrl>
+	 <XHTMLUrl widthsize="208">/208</XHTMLUrl>
+	 <XHTMLUrl widthsize="240">/240</XHTMLUrl>
+	 <XHTMLUrl widthsize="320">/320</XHTMLUrl>
+	 <WMLUrl widthsize="128">/wml_page</WMLUrl>
+	 <WMLUrl widthsize="176">/wml_page</WMLUrl>
+	 <WMLUrl widthsize="208">/wml_page</WMLUrl>
   </IntelliRedirectUrl>
   <CookieSet>false</CookieSet>
   <PassQueryStringSet>true</PassQueryStringSet>

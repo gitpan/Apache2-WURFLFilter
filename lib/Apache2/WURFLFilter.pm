@@ -27,12 +27,13 @@ package Apache2::WURFLFilter;
   # 
 
   use vars qw($VERSION);
-  $VERSION= 0.3;
+  $VERSION= 0.4;
   my %Capability;
   my %Array_fb;
   my %Array_id;
   my %Array_DDRcapability;
-  my %IntelliUrl;
+  my %XHTMLUrl;
+  my %WMLUrl;
   my $intelliswitch="false";
   my $mobileversionurl;
   my $fullbrowserurl;
@@ -48,10 +49,12 @@ package Apache2::WURFLFilter;
   $Capability{'resolution_width'}="resolution_width";
   $Capability{'is_wireless_device'}="is_wireless_device";
   $Capability{'device_claims_web_support'}="device_claims_web_support";
+  $Capability{'xhtml_support_level'}="xhtml_support_level";
   #
   # Check if MOBILE_HOME is setting in apache httpd.conf file for example:
   # PerlSetEnv MOBILE_HOME <apache_directory>/MobileFilter
   #
+   printLog("WURFLFilter Version $VERSION");
   if ($ENV{MOBILE_HOME}) {
 	  &loadConfigFile("$ENV{MOBILE_HOME}/WURFLFilterConfig.xml","$ENV{MOBILE_HOME}/wurfl.xml");
   } else {
@@ -81,10 +84,15 @@ sub loadConfigFile {
 					 if ($_ =~ /\<IntelliSwitch\>/o) {
 						$intelliswitch=extValueTag('IntelliSwitch',$_);
 					 }
-					 if ($_ =~ /\<IntelliUrl/o) {
-						$capability=extValueTag('IntelliUrl',$_);
+					 if ($_ =~ /\<XHTMLUrl/o) {
+						$capability=extValueTag('XHTMLUrl',$_);
 						($null,$val,$null2)=split(/\"/, $_);
-						$IntelliUrl{$val}=$capability;				   
+						$XHTMLUrl{$val}=$capability;				   
+					 }				
+					 if ($_ =~ /\<WMLUrl/o) {
+						$capability=extValueTag('WMLUrl',$_);
+						($null,$val,$null2)=split(/\"/, $_);
+						$WMLUrl{$val}=$capability;				   
 					 }				
 					
 					 if ($_ =~ /\<FullBrowserUrl\>/o) {
@@ -143,6 +151,13 @@ sub loadConfigFile {
 		close IN;
         printLog("End loading  WURFL.xml");
 }
+sub internalParseTag {
+         my ($tag, $parameter) = @_;
+         $tag=substr($tag, index($tag,'<'),index($tag,'>'));
+         
+         
+         
+}
 sub parseWURFLFile {
          my ($record,$val) = @_;
 		 my $null="";
@@ -175,7 +190,7 @@ sub parseWURFLFile {
 			    #print "eccomi $val\n";
 			($null,$name,$null2,$value,$null3,$fb)=split(/\"/, $record);
 			if ($id) {
-                if ($Capability{$capability}) {			
+                if ($Capability{$name}) {			
 					if ($name) {
 						if ($value) {
 							$Array_DDRcapability{"$val|$name"}=$value;
@@ -396,6 +411,10 @@ sub handler    {
       	    foreach $capability2 (sort keys %ArrayCapFound) {
       	        my $visible=0;
       	        $s->warn("ECCOMI: $showdefaultvariable, $capability2");
+      	        if ($showdefaultvariable eq "false" & $capability2 eq 'xhtml_support_level') {
+      	           $visible=1;
+      	           
+      	        }
       	        if ($showdefaultvariable eq "false" & $capability2 eq 'is_wireless_device') {
       	           $visible=1;
       	           
@@ -444,13 +463,22 @@ sub handler    {
 			 if ($intelliswitch eq "false") {
 				 $location="$mobileversionurl$add_parameter";
 			 } else {
-				 if ($variabile ne "wurfl=device=false") {            
-					  foreach $width_toSearch (sort keys %IntelliUrl) {
-						 if ($width_toSearch <= $ArrayCapFound{'resolution_width'}) {
-							 $location=$IntelliUrl{$width_toSearch};
-							 $location="$location$add_parameter";
+				 if ($variabile ne "wurfl=device=false") {
+						 if ($ArrayCapFound{'xhtml_support_level'} ne "-1") {
+							  foreach $width_toSearch (sort keys %XHTMLUrl) {
+								 if ($width_toSearch <= $ArrayCapFound{'resolution_width'}) {
+									 $location=$XHTMLUrl{$width_toSearch};
+									 $location="$location$add_parameter";
+								 }
+							  }
+						 } else {
+							  foreach $width_toSearch (sort keys %WMLUrl) {
+								 if ($width_toSearch <= $ArrayCapFound{'resolution_width'}) {
+									 $location=$WMLUrl{$width_toSearch};
+									 $location="$location$add_parameter";
+								 }
+							  }
 						 }
-					  }
 				 } else {
 					 $location=$fullbrowserurl;
 				 }

@@ -1,8 +1,13 @@
-WurflFilter 0.3
+WURFLFilter 0.4
+Correct fix bugs
+Add Attribute WMLUrl for WML layout
+Change Attribute IntelliUrl in XHTMLUrl for XHTML layout
+
+WURFLFilter 0.3
 Optimization of storage data in memroy
 Correct README file
 
-WurflFilter 0.2
+WURFLFilter 0.2
 Read directly the WURFL.xml file from URL. This option is configurable into WURFLConfig.xml file.
 WurflFilter 0.1
 The First Edition
