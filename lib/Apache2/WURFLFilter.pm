@@ -27,7 +27,7 @@ package Apache2::WURFLFilter;
   # 
 
   use vars qw($VERSION);
-  $VERSION= 0.4;
+  $VERSION= 0.41;
   my %Capability;
   my %Array_fb;
   my %Array_id;
@@ -390,6 +390,8 @@ sub handler    {
       
       my $location;
       my $width_toSearch;
+      my $type_redirect="internal";
+      my $return_value;
 	  my %ArrayCapFound;
       my ($controlCookie,%ArrayCapFoundToPass)=existCookie($cookie); 
 
@@ -481,21 +483,22 @@ sub handler    {
 						 }
 				 } else {
 					 $location=$fullbrowserurl;
+					 $type_redirect="ext";
+					 $s->warn("Strange UA:$user_agent");
 				 }
 			 }
 		}
-        
-          $f->r->headers_out->set(Location => $location);
-          $f->r->status(Apache2::Const::REDIRECT);
-
+      $f->r->headers_out->set(Location => $location);
+      $f->r->status(Apache2::Const::REDIRECT);
+      $return_value=Apache2::Const::DECLINED;
       
-      return Apache2::Const::DECLINED;
+      return $return_value;
       
 } 
   1; 
 =head1 NAME
 
-Apache2::WURFLFilter - is Apache Mobile Filter that permit to redirect the device to the correct mobile content you have definded
+Apache2::WURFLFilter - is a Apache Mobile Filter that permit to redirect the device to the correct mobile content you have definded
 
 
 =head1 COREQUISITES

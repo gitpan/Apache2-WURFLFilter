@@ -1,3 +1,6 @@
+WURFLFilter 0.41
+the filter trace in error_log file the  "user agent" that not present in WURFL
+
 WURFLFilter 0.4
 Correct fix bugs
 Add Attribute WMLUrl for WML layout
