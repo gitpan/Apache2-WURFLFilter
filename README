@@ -1,7 +1,7 @@
 
 Apache2::WURFLMobile is an implementation of the Apache filter in Perl, the propose of this filter is to help to manage the mobile web solutions. This solutions is based to WURFL solutions.
 A good point to start is: <http://wurfl.sourceforge.net>
-I don't try to install in Win32 platform, but I suppose there isn't problem.
+I don't try to install in Win32 platform, but I suppose it's run well.
 
 PREREQUISITES
 
@@ -16,14 +16,12 @@ WURFL.xml
 Knowledge about Apache configuration
 
 INSTALLATION
-
 You need install and configure Apache 2.x
 
 Before you start to use my application you need to install mod_per 2.x and configure your apache, this is the right link:
 
 Download - http://perl.apache.org/download/index.html
 Documentation - http://perl.apache.org/docs/index.html
-
 The second step is to install the other packages, you can found here:
 
 http://search.cpan.org/
@@ -31,29 +29,37 @@ http://search.cpan.org/
 Now you can start to install my package:
 
 
-1) Create into you Apache 2.x home a directory call MobileFilter
-
-
-2) Put into MobileFilter directory the file WURFLMobile.pm
+1) perl Makefile.PL
+2) sudo make install
 
 
 3) open the file conf/httpd.conf and add this few commands:
 
+
+
 PerlSetEnv MOBILE_HOME <APACHE_DIRECTORY>/MobileFilter
 
-<Files ~ "\.mobile">    
-    PerlInputFilterHandler MobileFilter::WURFLFilter 
-</Files>
+<Location /mobile>    
+    PerlInputFilterHandler Apache2::WURFLFilter 
+</Location>  
 
+4) put the file WURFLFilterconfig.xml in this file you can say to the FILTER how it need to work. This is the step:
 
-4) WURFLMobile.config in this file you can say to the FILTER how it need to work. This is the step:
 
 a) configure the capability you need to use, for example: 
 
 		<capability>max_image_height</capbility>
+
 b)
 
-5) Download WURFL.xml here: http://wurfl.sourceforge.net/wurfl.zip
+
+
+
+5) Remember to define where to keep the Device Repository WURFL you have two option:
+
+1) Download WURFL.xml here: http://wurfl.sourceforge.net/wurfl.zip and copy into directory you have define into MOBILE_HOME 
+2) define a URL where you can download the WURFL.xml, good if you need to manage several mobile web server
+
 
 DOCUMENTATION
 

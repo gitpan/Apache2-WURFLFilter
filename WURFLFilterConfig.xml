@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <WURFLFilter>
+  <ConvertImage>true</ConvertImage>
+  <ResizeImageDirectory>/transform</ResizeImageDirectory>
   <WurflNetDownload>true</WurflNetDownload>
   <DownloadWurflURL>http://localhost/wurfl.xml</DownloadWurflURL>
   <CapabilityList>

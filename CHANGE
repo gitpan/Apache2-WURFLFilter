@@ -1,9 +1,14 @@
+WURFLFilter 0.5
+adaptation function image dynamic for the screen size of the device tested with PNG and GIF image type
+Added Attribute ConvertImage into config file for activate the adaptation image
+Added Attribute ResizeImageDirectory into config file for specify the destination of images
+
 WURFLFilter 0.41
-the filter trace in error_log file the  "user agent" that not present in WURFL
+the filter trace in error_log file the  "user agent" that not are present in WURFL
 
 WURFLFilter 0.4
 Correct fix bugs
-Add Attribute WMLUrl for WML layout
+Added Attribute WMLUrl for WML layout
 Change Attribute IntelliUrl in XHTMLUrl for XHTML layout
 
 WURFLFilter 0.3
