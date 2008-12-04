@@ -1,5 +1,11 @@
+
+WURFLFilter 0.52
+Fixed Bugs if cookie is true now the images is visible
+
 WURFLFilter 0.51
-Fixing Bugs of resize image, now it take the correct capability on WURFL
+Fixed Bugs of resize image, now it take the correct capability on WURFL
+Fixed Bugs if image to transform not found return correct message
+Fixed other little bugs
 
 WURFLFilter 0.5
 adaptation function image dynamic for the screen size of the device tested with PNG and GIF image type
@@ -20,5 +26,6 @@ Correct README file
 
 WURFLFilter 0.2
 Read directly the WURFL.xml file from URL. This option is configurable into WURFLConfig.xml file.
+
 WurflFilter 0.1
 The First Edition

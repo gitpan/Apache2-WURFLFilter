@@ -23,7 +23,7 @@
 	 <WMLUrl widthsize="176">/wml_page_176</WMLUrl>
 	 <WMLUrl widthsize="208">/wml_page_208</WMLUrl>
   </IntelliRedirectUrl>
-  <CookieSet>true</CookieSet>
+  <CookieSet>false</CookieSet>
   <PassQueryStringSet>false</PassQueryStringSet>
   <ShowDefaultVariable>true</ShowDefaultVariable>
 </WURFLFilter>

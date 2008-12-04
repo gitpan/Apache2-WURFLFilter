@@ -29,7 +29,7 @@ package Apache2::WURFLFilter;
   # 
 
   use vars qw($VERSION);
-  $VERSION= 0.51;
+  $VERSION= 0.52;
   my %Capability;
   my %Array_fb;
   my %Array_id;
@@ -477,11 +477,13 @@ sub handler    {
          $s->warn("USING CACHE:$variabile");
       }
       
-      	unless ($f->ctx) { 
-       	   if ($controlCookie eq "" && $cookieset eq "true") {
-       	       $f->r->err_headers_out->set ('Set-Cookie' => $variabile);
+      	unless ($f->ctx) {
+      	  if ($ImageType{$content_type}) { 
+			   if ($controlCookie eq "" && $cookieset eq "true" ) {				   
+				   $f->r->err_headers_out->set ('Set-Cookie' => $variabile);
+			   }
+			   $f->ctx(1);
        	   }
-       	   $f->ctx(1);
           
       	}
 
