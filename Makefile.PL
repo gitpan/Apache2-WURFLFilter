@@ -20,7 +20,7 @@ WriteMakefile(
                      'APR::Table'        => 0, 
                      'Apache2::Const'        => 0, 
 					 'Image::Resize'        => 0,
-					 'LWP::Simple'        => 0 
+					 	'LWP::Simple'        => 0 
                      },
     AUTHOR     	=> 'Idel Fuschini (ifuschini@cpan.org)' 
    

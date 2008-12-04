@@ -10,7 +10,7 @@
 	 <capability>resolution_width</capability>
 	 <capability>resolution_height</capability>
   </CapabilityList>
-  <IntelliSwitch>true</IntelliSwitch>
+  <IntelliSwitch>false</IntelliSwitch>
   <MobileVersionUrl>/cgi-bin/perl.html</MobileVersioneUrl>
   <FullBrowserUrl>http://www.google.com</FullBrowserUrl>
   <IntelliRiderectUrl>
@@ -23,9 +23,9 @@
 	 <WMLUrl widthsize="176">/wml_page_176</WMLUrl>
 	 <WMLUrl widthsize="208">/wml_page_208</WMLUrl>
   </IntelliRedirectUrl>
-  <CookieSet>false</CookieSet>
-  <PassQueryStringSet>true</PassQueryStringSet>
-  <ShowDefaultVariable>false</ShowDefaultVariable>
+  <CookieSet>true</CookieSet>
+  <PassQueryStringSet>false</PassQueryStringSet>
+  <ShowDefaultVariable>true</ShowDefaultVariable>
 </WURFLFilter>
 
 

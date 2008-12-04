@@ -1,3 +1,6 @@
+WURFLFilter 0.51
+Fixing Bugs of resize image, now it take the correct capability on WURFL
+
 WURFLFilter 0.5
 adaptation function image dynamic for the screen size of the device tested with PNG and GIF image type
 Added Attribute ConvertImage into config file for activate the adaptation image

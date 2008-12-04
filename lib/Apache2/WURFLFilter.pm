@@ -29,7 +29,7 @@ package Apache2::WURFLFilter;
   # 
 
   use vars qw($VERSION);
-  $VERSION= 0.5;
+  $VERSION= 0.51;
   my %Capability;
   my %Array_fb;
   my %Array_id;
@@ -54,7 +54,8 @@ package Apache2::WURFLFilter;
   $ImageType{'gif'}="gif";
   $ImageType{'jpg'}="jpg";
   $ImageType{'jpeg'}="jpeg";
-  $Capability{'resolution_width'}="resolution_width";
+  $Capability{'resolution_width'}="resolution_width";  
+  $Capability{'max_image_width'}="max_image_width";
   $Capability{'is_wireless_device'}="is_wireless_device";
   $Capability{'device_claims_web_support'}="device_claims_web_support";
   $Capability{'xhtml_support_level'}="xhtml_support_level";
@@ -405,7 +406,6 @@ sub handler    {
       my @fileArray = split(/\//, $uri);
       my $file=$fileArray[-1];
       my $docroot = $f->r->document_root();
-	  $s->warn("$uri --> $file <--");
       my $id="";
       my $method="";
       my $cookie = $f->r->headers_in->{Cookie} || '';
@@ -416,7 +416,12 @@ sub handler    {
       my $return_value;
 	  my %ArrayCapFound;
 	  my $dummy;
-      my ($controlCookie,%ArrayCapFoundToPass)=existCookie($cookie); 
+      my ($controlCookie,%ArrayCapFoundToPass)=existCookie($cookie);
+      if ($content_type) {
+        $dummy="";
+      } else {
+         $content_type="-----";
+      }
       if ($controlCookie eq "") {
       	if (index($user_agent,'UP.Link') >0 ) {
       	   $user_agent=substr($user_agent,0,index($user_agent,'UP.Link'));
@@ -446,6 +451,9 @@ sub handler    {
 					if ($showdefaultvariable eq "false" & $capability2 eq 'device_claims_web_support') {
 					   $visible=1;
 					}
+					if ($showdefaultvariable eq "false" & $capability2 eq 'max_image_width') {
+					   $visible=1;
+					}
 					if ($visible == 0) {
 						if ($count==0) {
 						   $count=1;
@@ -463,7 +471,9 @@ sub handler    {
 	  	}
 
       } else {
-         $variabile=$controlCookie;         
+         $variabile=$controlCookie;
+         $ArrayCapFound{'device_claims_web_support'}='false';
+         $ArrayCapFound{'is_wireless_device'}='true';
          $s->warn("USING CACHE:$variabile");
       }
       
@@ -477,32 +487,34 @@ sub handler    {
 
 	  if ($ImageType{$content_type}) {
 	          if ($convertimage eq "true") {
-				  my $width=$ArrayCapFound{'resolution_width'};
+				  my $width=$ArrayCapFound{'max_image_width'};
 				  my $imagefile="$resizeimagedirectory/$width.$file";
 				  #
 				  # control if image exist
 				  #
-				  if ( -e "$docroot$imagefile") {
-					$dummy="";
-				  } else { 
-					  my $image = Image::Resize->new("$docroot$uri");
-					  my $gd = $image->resize($ArrayCapFound{'resolution_width'}, 250);
-					  open(FH, ">$docroot$imagefile");
-						if ($content_type eq "gif") {
-							print FH $gd->gif();
-						}
-						if ($content_type eq "jpg") {
-							print FH $gd->jpeg();
-						}
-						if ($content_type eq "png") {
-							print FH $gd->png();
-						}
-					  close(FH);
+				  if ( -e "$docroot$uri") {
+					  if ( -e "$docroot$imagefile") {
+						$dummy="";
+					  } else { 
+						  my $image = Image::Resize->new("$docroot$uri");
+						  my $gd = $image->resize($ArrayCapFound{'max_image_width'}, 250);
+						  open(FH, ">$docroot$imagefile");
+							if ($content_type eq "gif") {
+								print FH $gd->gif();
+							}
+							if ($content_type eq "jpg") {
+								print FH $gd->jpeg();
+							}
+							if ($content_type eq "png") {
+								print FH $gd->png();
+							}
+						  close(FH);
+					  }
+					  $f->r->headers_out->set(Location => $imagefile);
+					  $f->r->status(Apache2::Const::REDIRECT);
 				  }
-				  $f->r->headers_out->set(Location => $imagefile);
-				  $f->r->status(Apache2::Const::REDIRECT);
               }
-			  $return_value=Apache2::Const::DECLINED;
+			  
 	  } else {
 				#
 				# verify if the device is fullbrowser 
@@ -512,7 +524,6 @@ sub handler    {
 					$add_parameter=substr($variabile,6,length($variabile));
 					$add_parameter="\?$add_parameter";
 				}
-				$s->warn("$querystring");
 				if ($ArrayCapFound{'device_claims_web_support'} eq 'true' && $ArrayCapFound{'is_wireless_device'} eq 'false') {
 					$location=$fullbrowserurl;      		
 				} else {
@@ -544,8 +555,8 @@ sub handler    {
 				}
                 $f->r->headers_out->set(Location => $location);
                 $f->r->status(Apache2::Const::REDIRECT);
-                $return_value=Apache2::Const::DECLINED;
 	  }
+	  $return_value=Apache2::Const::DECLINED;
       return $return_value;
       
 } 
@@ -567,7 +578,7 @@ So I thought it was  to make something simply that can identify a browser and re
 
 If you are a  programmer and you want to develop a simple mobile solution you can use this module to pass few Wurfl Capabilities information to your application. In this case it's not important with which technology you want to develop your site and you don't need to implement new methods to how recognise the devices.
 
-For more details: http://www.idelfuschini.it/
+For more details: http://www.idelfuschini.it/index.php/apache-mobile-filter.html
 
 NOTE: this software need wurfl.xml from this site: http://wurfl.sourceforge.net
 
