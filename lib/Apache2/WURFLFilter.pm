@@ -29,7 +29,7 @@ package Apache2::WURFLFilter;
   # 
 
   use vars qw($VERSION);
-  $VERSION= 0.52;
+  $VERSION= 0.53;
   my %Capability;
   my %Array_fb;
   my %Array_id;
@@ -414,9 +414,8 @@ sub handler    {
       my $width_toSearch;
       my $type_redirect="internal";
       my $return_value;
-	  my %ArrayCapFound;
 	  my $dummy;
-      my ($controlCookie,%ArrayCapFoundToPass)=existCookie($cookie);
+      my ($controlCookie,%ArrayCapFound)=existCookie($cookie);
       if ($content_type) {
         $dummy="";
       } else {
