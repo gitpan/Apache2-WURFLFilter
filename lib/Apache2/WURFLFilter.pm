@@ -29,7 +29,7 @@ package Apache2::WURFLFilter;
   # 
 
   use vars qw($VERSION);
-  $VERSION= 0.53;
+  $VERSION= 0.54;
   my %Capability;
   my %Array_fb;
   my %Array_id;
@@ -399,7 +399,7 @@ sub handler    {
       my $f = shift;
       my $capability2;
       my $s = $f->r->server;
-      my $variabile="wurfl=";
+      my $variabile="";
       my  $user_agent=$f->r->headers_in->{'User-Agent'};
       my $uri = $f->r->uri();
       my ($content_type) = $uri =~ /\.(\w+)$/;
@@ -435,7 +435,7 @@ sub handler    {
       	}
        	if ($id ne "") {
            %ArrayCapFound=FallBack($id);
-            if ($ImageType{$content_type}) {
+           if ($ImageType{$content_type}) {
 				  $dummy="";
             } else {
 				my $count=0;
@@ -456,30 +456,31 @@ sub handler    {
 					if ($visible == 0) {
 						if ($count==0) {
 						   $count=1;
-							$variabile="wurfl=$capability2=$ArrayCapFound{$capability2}";
+							$variabile="$capability2=$ArrayCapFound{$capability2}";
 						} else {
 							$variabile="$variabile&$capability2=$ArrayCapFound{$capability2}";
 						}
 					}
 				 }
+          	     $s->warn("$method -->$variabile");
          	 }
-          	 $s->warn("$method -->$variabile");
       	} else {
-            $variabile="wurfl=device=false";
+            $variabile="device=false";
             $s->warn("Device not found:$user_agent");
 	  	}
 
       } else {
          $variabile=$controlCookie;
-         $ArrayCapFound{'device_claims_web_support'}='false';
-         $ArrayCapFound{'is_wireless_device'}='true';
          $s->warn("USING CACHE:$variabile");
       }
       
       	unless ($f->ctx) {
       	  if ($ImageType{$content_type}) { 
-			   if ($controlCookie eq "" && $cookieset eq "true" ) {				   
-				   $f->r->err_headers_out->set ('Set-Cookie' => $variabile);
+      	     $dummy="";
+      	  } else { 
+			   if ($controlCookie eq "" && $cookieset eq "true" ) {
+			       $s->warn("Cookie: $variabile");
+				   $f->r->err_headers_out->set ('Set-Cookie' => "wurfl=$variabile");
 			   }
 			   $f->ctx(1);
        	   }
@@ -513,6 +514,7 @@ sub handler    {
 					  }
 					  $f->r->headers_out->set(Location => $imagefile);
 					  $f->r->status(Apache2::Const::REDIRECT);
+					  $return_value=Apache2::Const::DECLINED;
 				  }
               }
 			  
@@ -522,8 +524,7 @@ sub handler    {
 				#
 				my $add_parameter="";
 				if ($querystring eq "true") {
-					$add_parameter=substr($variabile,6,length($variabile));
-					$add_parameter="\?$add_parameter";
+					$add_parameter="\?$variabile";
 				}
 				if ($ArrayCapFound{'device_claims_web_support'} eq 'true' && $ArrayCapFound{'is_wireless_device'} eq 'false') {
 					$location=$fullbrowserurl;      		
@@ -531,7 +532,7 @@ sub handler    {
 					 if ($intelliswitch eq "false") {
 						 $location="$mobileversionurl$add_parameter";
 					 } else {
-						 if ($variabile ne "wurfl=device=false") {
+						 if ($variabile ne "device=false") {
 								 if ($ArrayCapFound{'xhtml_support_level'} ne "-1") {
 									  foreach $width_toSearch (sort keys %XHTMLUrl) {
 										 if ($width_toSearch <= $ArrayCapFound{'resolution_width'}) {
@@ -556,8 +557,9 @@ sub handler    {
 				}
                 $f->r->headers_out->set(Location => $location);
                 $f->r->status(Apache2::Const::REDIRECT);
+                $return_value=Apache2::Const::DECLINED;
 	  }
-	  $return_value=Apache2::Const::DECLINED;
+	  
       return $return_value;
       
 } 
