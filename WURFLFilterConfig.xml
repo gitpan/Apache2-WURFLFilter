@@ -6,9 +6,10 @@
   <DownloadWurflURL>http://localhost/wurfl.xml</DownloadWurflURL>
   <CapabilityList>
 	 <capability>max_image_width</capability>
-	 <capability>max_image_height</capability>
-	 <capability>resolution_width</capability>
-	 <capability>resolution_height</capability>
+	 <!--capability>max_image_height</capability-->
+	 <!--capability>resolution_width</capability-->
+	 <!--capability>resolution_height</capability-->
+	 <capability>j2me_midp_2_0</capability>
   </CapabilityList>
   <IntelliSwitch>false</IntelliSwitch>
   <MobileVersionUrl>/cgi-bin/perl.html</MobileVersioneUrl>
@@ -22,10 +23,13 @@
 	 <WMLUrl widthsize="128">/wml_page_128</WMLUrl>
 	 <WMLUrl widthsize="176">/wml_page_176</WMLUrl>
 	 <WMLUrl widthsize="208">/wml_page_208</WMLUrl>
+	 <CHTMLUrl widthsize="128">/cHtml_page_128</CHTMLUrl>
+	 <CHTMLUrl widthsize="176">/cHtml_page_176</CHTMLUrl>
+	 <CHTMLUrl widthsize="208">/cHtml_page_208</CHTMLUrl>
   </IntelliRedirectUrl>
   <CookieSet>false</CookieSet>
   <PassQueryStringSet>true</PassQueryStringSet>
-  <ShowDefaultVariable>true</ShowDefaultVariable>
+  <ShowDefaultVariable>false</ShowDefaultVariable>
 </WURFLFilter>
 
 

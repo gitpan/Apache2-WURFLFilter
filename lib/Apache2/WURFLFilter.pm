@@ -29,13 +29,14 @@ package Apache2::WURFLFilter;
   # 
 
   use vars qw($VERSION);
-  $VERSION= 0.54;
+  $VERSION= 0.6;
   my %Capability;
   my %Array_fb;
   my %Array_id;
   my %Array_DDRcapability;
   my %XHTMLUrl;
   my %WMLUrl;
+  my %CHTMLUrl;
   my %ImageType;
   my $intelliswitch="false";
   my $mobileversionurl;
@@ -59,6 +60,7 @@ package Apache2::WURFLFilter;
   $Capability{'is_wireless_device'}="is_wireless_device";
   $Capability{'device_claims_web_support'}="device_claims_web_support";
   $Capability{'xhtml_support_level'}="xhtml_support_level";
+  $Capability{'html_wi_imode_ compact_generic'}="html_wi_imode_ compact_generic";
   #
   # Check if MOBILE_HOME is setting in apache httpd.conf file for example:
   # PerlSetEnv MOBILE_HOME <apache_directory>/MobileFilter
@@ -102,6 +104,11 @@ sub loadConfigFile {
 						$capability=extValueTag('WMLUrl',$_);
 						($null,$val,$null2)=split(/\"/, $_);
 						$WMLUrl{$val}=$capability;				   
+					 }				
+					 if ($_ =~ /\<CHTMLUrl/o) {
+						$capability=extValueTag('CHTMLUrl',$_);
+						($null,$val,$null2)=split(/\"/, $_);
+						$CHTMLUrl{$val}=$capability;				   
 					 }				
 					
 					 if ($_ =~ /\<FullBrowserUrl\>/o) {
@@ -544,6 +551,14 @@ sub handler    {
 									  foreach $width_toSearch (sort keys %WMLUrl) {
 										 if ($width_toSearch <= $ArrayCapFound{'resolution_width'}) {
 											 $location=$WMLUrl{$width_toSearch};
+											 $location="$location$add_parameter";
+										 }
+									  }
+								 }
+								 if ($ArrayCapFound{'html_wi_imode_ compact_generic'} eq "true") {
+									  foreach $width_toSearch (sort keys %CHTMLUrl) {
+										 if ($width_toSearch <= $ArrayCapFound{'resolution_width'}) {
+											 $location=$CHTMLUrl{$width_toSearch};
 											 $location="$location$add_parameter";
 										 }
 									  }
