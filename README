@@ -46,12 +46,10 @@ PerlSetEnv MOBILE_HOME <APACHE_DIRECTORY>/MobileFilter
 4) put the file WURFLFilterconfig.xml in this file you can say to the FILTER how it need to work. This is the step:
 
 
-a) configure the capability you need to use, for example: 
+configure the capability you need to use, for example: 
 
-		<capability>max_image_height</capbility>
-
-b)
-
+		
+    <capability>max_image_height</capbility>
 
 
 

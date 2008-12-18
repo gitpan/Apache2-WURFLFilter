@@ -3,7 +3,7 @@ use ExtUtils::MakeMaker;
 # the contents of the Makefile that is written.
   print << 'EOT1';
   
-Mobile Apcache Filter (ifuschini@cpan.org)
+Mobile Apache Filter (idel@idelfuschini.it)
 
 EOT1
 WriteMakefile(
@@ -20,8 +20,10 @@ WriteMakefile(
                      'APR::Table'        => 0, 
                      'Apache2::Const'        => 0, 
 					 'Image::Resize'        => 0,
-					 'LWP::Simple'        => 0 
+					 'LWP::Simple'        => 0,
+					 'IO::Uncompress::Unzip'    => 0 
+					 
                      },
-    AUTHOR     	=> 'Idel Fuschini (ifuschini@cpan.org)' 
+    AUTHOR     	=> 'Idel Fuschini (idel@idelfuschini.it)' 
    
 );

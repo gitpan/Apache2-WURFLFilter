@@ -24,12 +24,13 @@ package Apache2::WURFLFilter;
   use LWP::Simple;
   use Image::Resize;
   use Apache2::Const -compile => qw(OK REDIRECT DECLINED);
+  use IO::Uncompress::Unzip qw(unzip $UnzipError) ;
   #
   # Define the global environment
   # 
 
   use vars qw($VERSION);
-  $VERSION= 0.6;
+  $VERSION= "1.0";
   my %Capability;
   my %Array_fb;
   my %Array_id;
@@ -48,6 +49,7 @@ package Apache2::WURFLFilter;
   my $downloadwurflurl="false";
   my $convertimage="false";
   my $resizeimagedirectory="";
+  my $downloadzipfile="true";
   
   
   
@@ -129,6 +131,9 @@ sub loadConfigFile {
 					 if ($_ =~ /\<DownloadWurflURL\>/o) {
 						$downloadwurflurl=extValueTag('DownloadWurflURL',$_);
 					 }			
+					 if ($_ =~ /\<DownloadZipFile\>/o) {
+						$downloadzipfile=extValueTag('DownloadZipFile',$_);
+					 }
 					 if ($_ =~ /\<ConvertImage\>/o) {
 						$convertimage=extValueTag('ConvertImage',$_);
 					 }			
@@ -152,12 +157,38 @@ sub loadConfigFile {
    		        printLog("Couldn't get $downloadwurflurl. Errore:$content");
 		   		ModPerl::Util::exit();
 	        }
-            my @rows = split(/\n/, $content);
-            my $row;
-            my $count=0;
-            foreach $row (@rows){
-                $r_id=parseWURFLFile($row,$r_id);
-            }
+	        if ($downloadzipfile eq 'true') {
+	              printLog("Uncompress File start");
+				  my @dummypairs = split(/\//, $downloadwurflurl);
+				  my ($ext_zip) = $downloadwurflurl =~ /\.(\w+)$/;
+				  my $filezip=$dummypairs[-1];
+				  my $tmp_dir=$ENV{MOBILE_HOME};
+				  $filezip="$tmp_dir/$filezip";
+				  if ($ext_zip eq 'zip') {
+					  open(FH, ">$filezip");
+						  print FH $content;
+					  close FH;
+				  } else {
+					  printLog ("The file compress you try to download it's not a zip format");
+					  ModPerl::Util::exit();
+				  }
+				  my $output="$tmp_dir/tmp_wurfl.xml";
+				  unzip $filezip => $output 
+						or die "unzip failed: $UnzipError\n";
+					open (IN,"$output");
+					while (<IN>) {
+					     $r_id=parseWURFLFile($_,$r_id);
+					     
+					}
+					close IN;			  
+			} else {
+				my @rows = split(/\n/, $content);
+				my $row;
+				my $count=0;
+				foreach $row (@rows){
+					$r_id=parseWURFLFile($row,$r_id);
+				}
+			}
 	    } else {
 			if (-e "$file2") {
 					printLog("Start loading  WURFL.xml");

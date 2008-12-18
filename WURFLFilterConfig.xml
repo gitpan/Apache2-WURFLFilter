@@ -3,7 +3,9 @@
   <ConvertImage>true</ConvertImage>
   <ResizeImageDirectory>/transform</ResizeImageDirectory>
   <WurflNetDownload>true</WurflNetDownload>
+  <DownloadZipFile>true</DownloadZipFile>
   <DownloadWurflURL>http://localhost/wurfl.xml</DownloadWurflURL>
+  <!--DownloadWurflURL>http://wurfl.sourceforge.net/wurfl.zip</DownloadWurflURL-->
   <CapabilityList>
 	 <capability>max_image_width</capability>
 	 <!--capability>max_image_height</capability-->
@@ -11,7 +13,7 @@
 	 <!--capability>resolution_height</capability-->
 	 <capability>j2me_midp_2_0</capability>
   </CapabilityList>
-  <IntelliSwitch>false</IntelliSwitch>
+  <IntelliSwitch>true</IntelliSwitch>
   <MobileVersionUrl>/cgi-bin/perl.html</MobileVersioneUrl>
   <FullBrowserUrl>http://www.google.com</FullBrowserUrl>
   <IntelliRiderectUrl>

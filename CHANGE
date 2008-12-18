@@ -1,4 +1,8 @@
-WURFLFilter 0.54
+WURFLFilter 1.0
+Added Attribute DownloadZipFile for download zip file of WURFL DB
+Add function to download zip file and uncompress it
+
+WURFLFilter 0.6
 Added Attribut cHTML for CHTML layout
 
 WURFLFilter 0.54
