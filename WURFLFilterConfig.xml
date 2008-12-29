@@ -2,18 +2,18 @@
 <WURFLFilter>
   <ConvertImage>true</ConvertImage>
   <ResizeImageDirectory>/transform</ResizeImageDirectory>
+  <ConvertOnlyImages>true</ConvertOnlyImages>
+  <WebAppConvertImages>true</WebAppConvertImages>
+  <WebAppDirectory>/Users/idelfuschini/apache-tomcat-5.5.25/webapps/</WebAppDirectory>
   <WurflNetDownload>true</WurflNetDownload>
   <DownloadZipFile>true</DownloadZipFile>
-  <DownloadWurflURL>http://localhost/wurfl.xml</DownloadWurflURL>
-  <!--DownloadWurflURL>http://wurfl.sourceforge.net/wurfl.zip</DownloadWurflURL-->
+  <!--DownloadWurflURL>http://localhost/wurfl.xml</DownloadWurflURL-->
+  <DownloadWurflURL>http://wurfl.sourceforge.net/wurfl.zip</DownloadWurflURL>
   <CapabilityList>
 	 <capability>max_image_width</capability>
-	 <!--capability>max_image_height</capability-->
-	 <!--capability>resolution_width</capability-->
-	 <!--capability>resolution_height</capability-->
 	 <capability>j2me_midp_2_0</capability>
   </CapabilityList>
-  <IntelliSwitch>true</IntelliSwitch>
+  <IntelliSwitch>false</IntelliSwitch>
   <MobileVersionUrl>/cgi-bin/perl.html</MobileVersioneUrl>
   <FullBrowserUrl>http://www.google.com</FullBrowserUrl>
   <IntelliRiderectUrl>

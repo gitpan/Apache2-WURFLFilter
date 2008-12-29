@@ -1,3 +1,8 @@
+WURFLFilter 1.1
+Added Attribute WebAppConvertImages if you use an application server site
+Added Attribute WebAppDirectory for specify the directory of WebApp
+Added Attribute ConvertOnlyImages if you want to use the filter only for the images and not for other content
+
 WURFLFilter 1.0
 Added Attribute DownloadZipFile for download zip file of WURFL DB
 Add function to download zip file and uncompress it

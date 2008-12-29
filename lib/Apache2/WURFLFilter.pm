@@ -30,7 +30,7 @@ package Apache2::WURFLFilter;
   # 
 
   use vars qw($VERSION);
-  $VERSION= "1.0";
+  $VERSION= "1.1";
   my %Capability;
   my %Array_fb;
   my %Array_id;
@@ -50,7 +50,9 @@ package Apache2::WURFLFilter;
   my $convertimage="false";
   my $resizeimagedirectory="";
   my $downloadzipfile="true";
-  
+  my $virtualdirectoryimages="false";
+  my $virtualdirectory="";
+  my $convertonlyimages="false";  
   
   
   $ImageType{'png'}="png";
@@ -83,8 +85,9 @@ sub loadConfigFile {
          my $val;
 	     my $capability;
 	     my $r_id;
+	     my $dummy;
 		 if (-e "$file") {
-			 printLog("Loading  WURFLMobile.config");
+			 printLog("Start loading  WURFLMobile.config");
 			 open (IN, "$file");
 				 while (<IN>) {
 					 if ($_ =~ /\<capability\>/o) {
@@ -118,29 +121,48 @@ sub loadConfigFile {
 					 }			
 					 if ($_ =~ /\<CookieSet\>/o) {
 						$cookieset=extValueTag('CookieSet',$_);
+						printLog("CookieSet is:           $cookieset");
 					 }			
 					 if ($_ =~ /\<PassQueryStringSet\>/o) {
 						$querystring=extValueTag('PassQueryStringSet',$_);
+						printLog("PassQueryStringSet is : $querystring");
 					 }			
 					 if ($_ =~ /\<ShowDefaultVariable\>/o) {
 						$showdefaultvariable=extValueTag('ShowDefaultVariable',$_);
+						printLog("ShowDefaultVariable is: $showdefaultvariable");
 					 }			
 					 if ($_ =~ /\<WurflNetDownload\>/o) {
 						$wurflnetdownload=extValueTag('WurflNetDownload',$_);
+						printLog("WurflNetDownload is:    $wurflnetdownload");
+						
 					 }			
 					 if ($_ =~ /\<DownloadWurflURL\>/o) {
 						$downloadwurflurl=extValueTag('DownloadWurflURL',$_);
 					 }			
 					 if ($_ =~ /\<DownloadZipFile\>/o) {
 						$downloadzipfile=extValueTag('DownloadZipFile',$_);
+						printLog("DownloadZipFile is:     $downloadzipfile");
 					 }
 					 if ($_ =~ /\<ConvertImage\>/o) {
 						$convertimage=extValueTag('ConvertImage',$_);
+						printLog("ConvertImage is :       $convertimage");
 					 }			
 					 if ($_ =~ /\<ResizeImageDirectory\>/o) {
 						$resizeimagedirectory=extValueTag('ResizeImageDirectory',$_);
 					 }			
-
+					 if ($_ =~ /\<WebAppConvertImages\>/o) {
+						$virtualdirectoryimages=extValueTag('WebAppConvertImages',$_);
+						printLog("WebAppConvertImages is: $virtualdirectoryimages");
+					 }	
+					 
+					 if ($_ =~ /\<WebAppDirectory\>/o) {
+						$virtualdirectory=extValueTag('WebAppDirectory',$_);
+					 }			
+					 if ($_ =~ /\<ConvertOnlyImages\>/o) {
+						$convertonlyimages=extValueTag('ConvertOnlyImages',$_);
+						printLog("ConvertOnlyImages is:   $convertonlyimages");
+					 }	
+                     
 
 			 }				
 			 
@@ -149,6 +171,9 @@ sub loadConfigFile {
 		   ModPerl::Util::exit();
 	      }
 	      close IN;
+	      printLog("Finish loading  WURFLMobile.config");
+	      printLog("----------------------------------");
+
 	    if ($wurflnetdownload eq "true") {
 	        printLog("Start downloading  WURFL.xml from $downloadwurflurl");
 	        my $content = get $downloadwurflurl;
@@ -204,6 +229,9 @@ sub loadConfigFile {
 			}
 		}
 		close IN;
+		my $arrLen = scalar %Array_id;
+		($arrLen,$dummy)= split(/\//, $arrLen);
+        printLog("This version of WURFL have $arrLen UserAgent");
         printLog("End loading  WURFL.xml");
 }
 sub internalParseTag {
@@ -532,11 +560,18 @@ sub handler    {
 				  #
 				  # control if image exist
 				  #
-				  if ( -e "$docroot$uri") {
+				  my $imageToConvert;
+				  if ($virtualdirectoryimages eq 'true') {
+				     $imageToConvert="$virtualdirectory$uri";
+				  } else {
+				     $imageToConvert="$docroot$uri";
+				  }
+				  #$s->warn("Directory: $imageToConvert");
+				  if ( -e "$imageToConvert") {
 					  if ( -e "$docroot$imagefile") {
 						$dummy="";
 					  } else { 
-						  my $image = Image::Resize->new("$docroot$uri");
+						  my $image = Image::Resize->new("$imageToConvert");
 						  my $gd = $image->resize($ArrayCapFound{'max_image_width'}, 250);
 						  open(FH, ">$docroot$imagefile");
 							if ($content_type eq "gif") {
@@ -601,8 +636,10 @@ sub handler    {
 						 }
 					 }
 				}
-                $f->r->headers_out->set(Location => $location);
-                $f->r->status(Apache2::Const::REDIRECT);
+				if ($convertonlyimages ne 'true') {
+                   $f->r->headers_out->set(Location => $location);
+                   $f->r->status(Apache2::Const::REDIRECT);
+                }
                 $return_value=Apache2::Const::DECLINED;
 	  }
 	  
