@@ -1,3 +1,7 @@
+WURFLFilter 1.2
+AddedAttribute Log4WurflNoDeviceDetect it's a necessary log for detect new device that WURFL not has included
+Fixed some bugs
+
 WURFLFilter 1.1
 Added Attribute WebAppConvertImages if you use an application server site
 Added Attribute WebAppDirectory for specify the directory of WebApp

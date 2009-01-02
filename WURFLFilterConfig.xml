@@ -2,13 +2,13 @@
 <WURFLFilter>
   <ConvertImage>true</ConvertImage>
   <ResizeImageDirectory>/transform</ResizeImageDirectory>
-  <ConvertOnlyImages>true</ConvertOnlyImages>
-  <WebAppConvertImages>true</WebAppConvertImages>
+  <ConvertOnlyImages>false</ConvertOnlyImages>
+  <WebAppConvertImages>false</WebAppConvertImages>
   <WebAppDirectory>/Users/idelfuschini/apache-tomcat-5.5.25/webapps/</WebAppDirectory>
   <WurflNetDownload>true</WurflNetDownload>
-  <DownloadZipFile>true</DownloadZipFile>
-  <!--DownloadWurflURL>http://localhost/wurfl.xml</DownloadWurflURL-->
-  <DownloadWurflURL>http://wurfl.sourceforge.net/wurfl.zip</DownloadWurflURL>
+  <DownloadZipFile>false</DownloadZipFile>
+  <DownloadWurflURL>http://localhost/wurfl.xml</DownloadWurflURL>
+  <!--DownloadWurflURL>http://wurfl.sourceforge.net/wurfl.zip</DownloadWurflURL-->
   <CapabilityList>
 	 <capability>max_image_width</capability>
 	 <capability>j2me_midp_2_0</capability>
@@ -32,6 +32,7 @@
   <CookieSet>false</CookieSet>
   <PassQueryStringSet>true</PassQueryStringSet>
   <ShowDefaultVariable>false</ShowDefaultVariable>
+  <Log4WurflNoDeviceDetect>/Users/idelfuschini/SVILUPPO_PLUGIN/apache2_dev/WurflLog/DeviceNotFound.log</Log4WurflNoDeviceDetect>
 </WURFLFilter>
 
 

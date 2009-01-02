@@ -30,7 +30,7 @@ package Apache2::WURFLFilter;
   # 
 
   use vars qw($VERSION);
-  $VERSION= "1.1";
+  $VERSION= "1.2";
   my %Capability;
   my %Array_fb;
   my %Array_id;
@@ -39,6 +39,7 @@ package Apache2::WURFLFilter;
   my %WMLUrl;
   my %CHTMLUrl;
   my %ImageType;
+  
   my $intelliswitch="false";
   my $mobileversionurl;
   my $fullbrowserurl;
@@ -52,8 +53,10 @@ package Apache2::WURFLFilter;
   my $downloadzipfile="true";
   my $virtualdirectoryimages="false";
   my $virtualdirectory="";
-  my $convertonlyimages="false";  
-  
+  my $convertonlyimages="false"; 
+  my $repasshanlder=0;
+  my $globalpassvariable="";
+  my $log4wurfl="";
   
   $ImageType{'png'}="png";
   $ImageType{'gif'}="gif";
@@ -162,6 +165,10 @@ sub loadConfigFile {
 						$convertonlyimages=extValueTag('ConvertOnlyImages',$_);
 						printLog("ConvertOnlyImages is:   $convertonlyimages");
 					 }	
+					 if ($_ =~ /\<Log4WurflNoDeviceDetect\>/o) {
+						$log4wurfl=extValueTag('Log4WurflNoDeviceDetect',$_);
+					 }	
+
                      
 
 			 }				
@@ -171,9 +178,13 @@ sub loadConfigFile {
 		   ModPerl::Util::exit();
 	      }
 	      close IN;
-	      printLog("Finish loading  WURFLMobile.config");
-	      printLog("----------------------------------");
-
+          if ($log4wurfl eq "") {
+   		     printLog("The parameter Log4WurflNoDeviceDetect must be defined into WURFLMobile.config");
+		     ModPerl::Util::exit();
+	      }
+	      
+	    printLog("Finish loading  WURFLMobile.config");
+	    printLog("----------------------------------");
 	    if ($wurflnetdownload eq "true") {
 	        printLog("Start downloading  WURFL.xml from $downloadwurflurl");
 	        my $content = get $downloadwurflurl;
@@ -182,6 +193,7 @@ sub loadConfigFile {
    		        printLog("Couldn't get $downloadwurflurl. Errore:$content");
 		   		ModPerl::Util::exit();
 	        }
+	        
 	        if ($downloadzipfile eq 'true') {
 	              printLog("Uncompress File start");
 				  my @dummypairs = split(/\//, $downloadwurflurl);
@@ -236,10 +248,7 @@ sub loadConfigFile {
 }
 sub internalParseTag {
          my ($tag, $parameter) = @_;
-         $tag=substr($tag, index($tag,'<'),index($tag,'>'));
-         
-         
-         
+         $tag=substr($tag, index($tag,'<'),index($tag,'>'));         
 }
 sub parseWURFLFile {
          my ($record,$val) = @_;
@@ -330,6 +339,17 @@ sub printLog {
 	my ($info) = @_;
 	my $data=Data();
 	print "$data - $info\n";
+
+}
+sub printNotFound {
+	my ($info) = @_;
+	my $data=Data();
+	if ($info ne $globalpassvariable) {
+	open(LOGFILE, ">>$log4wurfl");
+      print LOGFILE "$data - $info\n";
+    close LOGFILE;
+    }
+    $globalpassvariable=$info;
 
 }
 
@@ -474,33 +494,36 @@ sub handler    {
       my $docroot = $f->r->document_root();
       my $id="";
       my $method="";
-      my $cookie = $f->r->headers_in->{Cookie} || '';
-      
+      my $cookie = $f->r->headers_in->{Cookie} || '';       
       my $location;
       my $width_toSearch;
       my $type_redirect="internal";
       my $return_value;
 	  my $dummy;
       my ($controlCookie,%ArrayCapFound)=existCookie($cookie);
+      $repasshanlder=$repasshanlder + 1;
       if ($content_type) {
         $dummy="";
       } else {
          $content_type="-----";
       }
-      if ($controlCookie eq "") {
-      	if (index($user_agent,'UP.Link') >0 ) {
-      	   $user_agent=substr($user_agent,0,index($user_agent,'UP.Link'));
-      	}
-      	if ($user_agent) {
-     	 	$id=FirstMethod($user_agent);
-      		$method="FirstMethod($id),$user_agent";
-      	}
-      	if ($id eq "") {
-       	 $id=SecondMethod($user_agent);
-      		$method="SecondMethod($id),$user_agent";
-      	}
+      if ($controlCookie eq "") {       
+			if (index($user_agent,'UP.Link') >0 ) {
+			   $user_agent=substr($user_agent,0,index($user_agent,'UP.Link'));
+			}
+			if ($user_agent) {
+				$id=FirstMethod($user_agent);
+				$method="FirstMethod($id),$user_agent";
+			}
+			if ($id eq "") {
+			 $id=SecondMethod($user_agent);
+				$method="SecondMethod($id),$user_agent";
+			}
        	if ($id ne "") {
-           %ArrayCapFound=FallBack($id);
+       	    #
+       	    # calling fallbac function
+       	    #
+          	%ArrayCapFound=FallBack($id);
            if ($ImageType{$content_type}) {
 				  $dummy="";
             } else {
@@ -528,30 +551,36 @@ sub handler    {
 						}
 					}
 				 }
-          	     $s->warn("$method -->$variabile");
+          	     $s->warn("$repasshanlder,$method -->$variabile");
          	 }
       	} else {
             $variabile="device=false";
             $s->warn("Device not found:$user_agent");
+            printNotFound("$user_agent");
+            $ArrayCapFound{'device_claims_web_support'}= 'true';
+            $ArrayCapFound{'is_wireless_device'}='false';
 	  	}
 
       } else {
          $variabile=$controlCookie;
+         $ArrayCapFound{'device_claims_web_support'}='false';
          $s->warn("USING CACHE:$variabile");
       }
-      
       	unless ($f->ctx) {
       	  if ($ImageType{$content_type}) { 
       	     $dummy="";
-      	  } else { 
-			   if ($controlCookie eq "" && $cookieset eq "true" ) {
-			       $s->warn("Cookie: $variabile");
-				   $f->r->err_headers_out->set ('Set-Cookie' => "wurfl=$variabile");
+      	  } else {
+			   if ($ArrayCapFound{'device_claims_web_support'} eq 'false') {
+				   if ($controlCookie eq "" && $cookieset eq "true" ) {
+					   $s->warn("Cookie: $variabile");
+					   $f->r->err_headers_out->set ('Set-Cookie' => "wurfl=$variabile");
+				   }
+				   $f->ctx(1);
 			   }
-			   $f->ctx(1);
        	   }
           
       	}
+
 
 	  if ($ImageType{$content_type}) {
 	          if ($convertimage eq "true") {
@@ -566,7 +595,6 @@ sub handler    {
 				  } else {
 				     $imageToConvert="$docroot$uri";
 				  }
-				  #$s->warn("Directory: $imageToConvert");
 				  if ( -e "$imageToConvert") {
 					  if ( -e "$docroot$imagefile") {
 						$dummy="";
@@ -633,6 +661,7 @@ sub handler    {
 							 $location=$fullbrowserurl;
 							 $type_redirect="ext";
 							 $s->warn("Strange UA:$user_agent");
+							 
 						 }
 					 }
 				}
@@ -642,6 +671,7 @@ sub handler    {
                 }
                 $return_value=Apache2::Const::DECLINED;
 	  }
+
 	  
       return $return_value;
       
