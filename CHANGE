@@ -1,3 +1,6 @@
+WURFLFilter 1.21
+Optimized code
+
 WURFLFilter 1.2
 AddedAttribute Log4WurflNoDeviceDetect it's a necessary log for detect new device that WURFL not has included
 Fixed some bugs

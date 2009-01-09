@@ -30,7 +30,7 @@ package Apache2::WURFLFilter;
   # 
 
   use vars qw($VERSION);
-  $VERSION= "1.2";
+  $VERSION= "1.21";
   my %Capability;
   my %Array_fb;
   my %Array_id;
@@ -72,7 +72,7 @@ package Apache2::WURFLFilter;
   # Check if MOBILE_HOME is setting in apache httpd.conf file for example:
   # PerlSetEnv MOBILE_HOME <apache_directory>/MobileFilter
   #
-   printLog("WURFLFilter Version $VERSION");
+  printLog("WURFLFilter Version $VERSION");
   if ($ENV{MOBILE_HOME}) {
 	  &loadConfigFile("$ENV{MOBILE_HOME}/WURFLFilterConfig.xml","$ENV{MOBILE_HOME}/wurfl.xml");
   } else {
@@ -202,9 +202,13 @@ sub loadConfigFile {
 				  my $tmp_dir=$ENV{MOBILE_HOME};
 				  $filezip="$tmp_dir/$filezip";
 				  if ($ext_zip eq 'zip') {
-					  open(FH, ">$filezip");
+					  if (open(FH, ">$filezip")) {
 						  print FH $content;
 					  close FH;
+					  } else {
+					      ModPerl::Util::exit();
+					      printLog("Error open file:$filezip");
+					  }
 				  } else {
 					  printLog ("The file compress you try to download it's not a zip format");
 					  ModPerl::Util::exit();
@@ -212,12 +216,15 @@ sub loadConfigFile {
 				  my $output="$tmp_dir/tmp_wurfl.xml";
 				  unzip $filezip => $output 
 						or die "unzip failed: $UnzipError\n";
-					open (IN,"$output");
+					if (open (IN,"$output")) {
 					while (<IN>) {
 					     $r_id=parseWURFLFile($_,$r_id);
-					     
 					}
 					close IN;			  
+					} else {
+					     printLog("Error open file:$output");
+					     ModPerl::Util::exit();
+					}
 			} else {
 				my @rows = split(/\n/, $content);
 				my $row;
@@ -229,12 +236,16 @@ sub loadConfigFile {
 	    } else {
 			if (-e "$file2") {
 					printLog("Start loading  WURFL.xml");
-					open (IN,"$file2");
-					while (<IN>) {
-					     $r_id=parseWURFLFile($_,$r_id);
-					     
+					if (open (IN,"$file2")) {
+						while (<IN>) {
+							 $r_id=parseWURFLFile($_,$r_id);
+							 
+						}
+						close IN;
+					} else {
+					    printLog("Error open file:$file2");
+					    ModPerl::Util::exit();
 					}
-					close IN;
 			} else {
 			  printLog("File $file2 not found");
 			  ModPerl::Util::exit();
@@ -259,36 +270,23 @@ sub parseWURFLFile {
 		 my $fb="";
 		 my $value="";
 		 my $id;
+		 my $name="";
 		 if ($val) {
 		    $id="$val";
-		 } else {
-		    $id="";
-		 }
-		 my $name="";
+		 } 
 	      if ($record =~ /\<device/o) {
 			($null,$id,$null2,$ua,$null3,$fb)=split(/\"/, $record);
-			 if ($id) {
-				 if ($fb) {	     	   
+				 if (($fb) && ($id)) {	     	   
 					$Array_fb{"$id"}=$fb;
 				 }
-				 if ($ua) {
-					 if ($id) {	     	   
+				 if (($ua) && ($id)) {	     	   
 						 $Array_id{"$ua"}=$id;
-					 }
 				 }
-			 }
 		 }
 		 if ($record =~ /\<capability/o) { 
-			    #print "eccomi $val\n";
 			($null,$name,$null2,$value,$null3,$fb)=split(/\"/, $record);
-			if ($id) {
-                if ($Capability{$name}) {			
-					if ($name) {
-						if ($value) {
-							$Array_DDRcapability{"$val|$name"}=$value;
-						}
-					}
-				}
+			if (($id) && ($Capability{$name}) && ($name) && ($value)) {
+			   $Array_DDRcapability{"$val|$name"}=$value;
 			}
 		 }
 		 return $id;
@@ -301,8 +299,7 @@ sub extValueTag {
    my $finish=index($string,"\>") + 1;
    my $x=$finish;
    my $y=index($string,$b_tag);
-   my $return_tag=substr($string,$x,$y - $x);
-  
+   my $return_tag=substr($string,$x,$y - $x);  
    return $return_tag;
 }
 sub Data {
@@ -339,15 +336,17 @@ sub printLog {
 	my ($info) = @_;
 	my $data=Data();
 	print "$data - $info\n";
-
 }
 sub printNotFound {
 	my ($info) = @_;
 	my $data=Data();
 	if ($info ne $globalpassvariable) {
-	open(LOGFILE, ">>$log4wurfl");
-      print LOGFILE "$data - $info\n";
-    close LOGFILE;
+		 if (open(LOGFILE, ">>$log4wurfl")){
+		     print LOGFILE "$data - $info\n";
+		  close LOGFILE;
+		} else {
+		  ModPerl::Util::exit();
+		}
     }
     $globalpassvariable=$info;
 
@@ -530,16 +529,16 @@ sub handler    {
 				my $count=0;
 				foreach $capability2 (sort keys %ArrayCapFound) {
 					my $visible=0;
-					if ($showdefaultvariable eq "false" & $capability2 eq 'xhtml_support_level') {
+					if ($showdefaultvariable eq "false" && $capability2 eq 'xhtml_support_level') {
 					   $visible=1;      	           
 					}
-					if ($showdefaultvariable eq "false" & $capability2 eq 'is_wireless_device') {
+					if ($showdefaultvariable eq "false" && $capability2 eq 'is_wireless_device') {
 					   $visible=1;      	           
 					}
-					if ($showdefaultvariable eq "false" & $capability2 eq 'device_claims_web_support') {
+					if ($showdefaultvariable eq "false" && $capability2 eq 'device_claims_web_support') {
 					   $visible=1;
 					}
-					if ($showdefaultvariable eq "false" & $capability2 eq 'max_image_width') {
+					if ($showdefaultvariable eq "false" && $capability2 eq 'max_image_width') {
 					   $visible=1;
 					}
 					if ($visible == 0) {
@@ -601,7 +600,7 @@ sub handler    {
 					  } else { 
 						  my $image = Image::Resize->new("$imageToConvert");
 						  my $gd = $image->resize($ArrayCapFound{'max_image_width'}, 250);
-						  open(FH, ">$docroot$imagefile");
+						  if (open(FH, ">$docroot$imagefile")) {
 							if ($content_type eq "gif") {
 								print FH $gd->gif();
 							}
@@ -612,6 +611,9 @@ sub handler    {
 								print FH $gd->png();
 							}
 						  close(FH);
+						  } else {
+					         $s->err("Can not create $docroot$imagefile");
+					      }
 					  }
 					  $f->r->headers_out->set(Location => $imagefile);
 					  $f->r->status(Apache2::Const::REDIRECT);
@@ -649,7 +651,7 @@ sub handler    {
 										 }
 									  }
 								 }
-								 if ($ArrayCapFound{'html_wi_imode_ compact_generic'} eq "true") {
+								 if ($ArrayCapFound{''} eq "true") {
 									  foreach $width_toSearch (sort keys %CHTMLUrl) {
 										 if ($width_toSearch <= $ArrayCapFound{'resolution_width'}) {
 											 $location=$CHTMLUrl{$width_toSearch};
@@ -691,12 +693,11 @@ Apache2
 
 This module The idea is to give to anybody the possibility to create mobile solution, it's not important if you know programming language just what you need to know is a little bit of html and if it's necessary wml.
 So I thought it was  to make something simply that can identify a browser and redirect it the correct url (for mobile or pc).
+Another feature I have implemented is the resize on the fly of the images, so if the wap/web developer want to adapted the images for the mobile device now it's possible. 
 
-If you are a  programmer and you want to develop a simple mobile solution you can use this module to pass few Wurfl Capabilities information to your application. In this case it's not important with which technology you want to develop your site and you don't need to implement new methods to how recognise the devices.
+For more details: http://www.idelfuschini.it/en/apache-mobile-filter.html
 
-For more details: http://www.idelfuschini.it/index.php/apache-mobile-filter.html
-
-NOTE: this software need wurfl.xml from this site: http://wurfl.sourceforge.net
+NOTE: this software need wurfl.xml you can download it directly from this site: http://wurfl.sourceforge.net or you canset the filter to download it directly.
 
 
 =cut
