@@ -1,3 +1,26 @@
+WURFLFilter 1.31
+After talking with Ugo L. it's possible to configure the filter into httpd.conf file
+Added Parameter XML_CONFIG to set where to read WURFLFilter configuration (to set in httpd.conf)
+Added Parameter CapabilityList the same of the old attribute "capability" in WURFLFilterConfig.configure (to set in httpd.conf)
+Added Parameter XHTMLUrl the same of the old attribute with the same name in WURFLFilterConfig.configure (to set in httpd.conf)
+Added Parameter WMLUrl the same of the old attribute with the same name in WURFLFilterConfig.configure (to set in httpd.conf)
+Added Parameter CHTMLUrl the same of the old attribute with the same name in WURFLFilterConfig.configure (to set in httpd.conf)
+Added Parameter MobileVersionUrl the same of the old attribute with the same name in WURFLFilterConfig.configure (to set in httpd.conf)
+Added Parameter IntelliSwitch  the same of the old attribute with the same name in WURFLFilterConfig.configure (to set in httpd.conf)
+Added Parameter FullBrowserUrl the same of the old attribute with the same name in WURFLFilterConfig.configure (to set in httpd.conf)
+Added Parameter CookieSet the same of the old attribute with the same name in WURFLFilterConfig.configure (to set in httpd.conf)
+Added Parameter PassQueryStringSet the same of the old attribute with the same name in WURFLFilterConfig.configure (to set in httpd.conf)
+Added Parameter ShowDefaultVariable the same of the old attribute with the same name in WURFLFilterConfig.configure (to set in httpd.conf)
+Added Parameter WurflNetDownload the same of the old attribute with the same name in WURFLFilterConfig.configure (to set in httpd.conf)
+Added Parameter DownloadWurflURL the same of the old attribute with the same name in WURFLFilterConfig.configure (to set in httpd.conf)
+Added Parameter DownloadZipFile the same of the old attribute with the same name in WURFLFilterConfig.configure (to set in httpd.conf)
+Added Parameter ConvertImage the same of the old attribute with the same name in WURFLFilterConfig.configure (to set in httpd.conf)
+Added Parameter ResizeImageDirectory the same of the old attribute with the same name in WURFLFilterConfig.configure (to set in httpd.conf)
+Added Parameter WebAppConvertImages the same of the old attribute with the same name in WURFLFilterConfig.configure (to set in httpd.conf)
+Added Parameter WebAppDirectory the same of the old attribute with the same name in WURFLFilterConfig.configure (to set in httpd.conf)
+Added Parameter ConvertOnlyImages the same of the old attribute with the same name in WURFLFilterConfig.configure (to set in httpd.conf)
+Added Parameter Log4WurflNoDeviceDetect the same of the old attribute with the same name in WURFLFilterConfig.configure (to set in httpd.conf)
+
 WURFLFilter 1.21
 Optimized code
 

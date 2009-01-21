@@ -37,6 +37,10 @@ Now you can start to install my package:
 
 
 
+PerlSetEnv XML_CONFIG true/false
+
+if XML_CONFIG is "true" read paragraph 4 
+
 PerlSetEnv MOBILE_HOME <APACHE_DIRECTORY>/MobileFilter
 
 <Location /mobile>    
