@@ -13,7 +13,7 @@
 	 <capability>max_image_width</capability>
 	 <capability>j2me_midp_2_0</capability>
   </CapabilityList>
-  <IntelliSwitch>false</IntelliSwitch>
+  <IntelliSwitch>true</IntelliSwitch>
   <MobileVersionUrl>/cgi-bin/perl.html</MobileVersioneUrl>
   <FullBrowserUrl>http://www.google.com</FullBrowserUrl>
   <IntelliRiderectUrl>
