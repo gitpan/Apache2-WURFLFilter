@@ -1,5 +1,8 @@
+WURFLFilter 1.4
+Increase performance with a new cache system mechanism
+
 WURFLFilter 1.31
-After talking with Ugo L. it's possible to configure the filter into httpd.conf file
+After talking with Gianugo R. it's possible to configure the filter into httpd.conf file
 Added Parameter XML_CONFIG to set where to read WURFLFilter configuration (to set in httpd.conf)
 Added Parameter CapabilityList the same of the old attribute "capability" in WURFLFilterConfig.configure (to set in httpd.conf)
 Added Parameter XHTMLUrl the same of the old attribute with the same name in WURFLFilterConfig.configure (to set in httpd.conf)

@@ -30,7 +30,7 @@ package Apache2::WURFLFilter;
   # 
 
   use vars qw($VERSION);
-  $VERSION= "1.31";
+  $VERSION= "1.4";
   my %Capability;
   my %Array_fb;
   my %Array_id;
@@ -39,7 +39,8 @@ package Apache2::WURFLFilter;
   my %WMLUrl;
   my %CHTMLUrl;
   my %ImageType;
-  
+  my %cacheArray;
+
   my $intelliswitch="false";
   my $mobileversionurl;
   my $fullbrowserurl;
@@ -533,14 +534,14 @@ sub FirstMethod {
          if ($id_find) {
            my $dummy2="";
          } else {
-          $id_find=$Array_id{$dummy};
+           $id_find=$Array_id{$dummy};
          }
       }
   }
   return $id_find;
 }
 sub SecondMethod {
-  my ($UserAgent) = @_;
+  my ($UserAgent,$precision) = @_;
   my $id_find="";
   my $near_toFind=1000;
   my $ua_toMatch;
@@ -554,7 +555,7 @@ sub SecondMethod {
            $id_find=$Array_id{$ua_toMatch};
         }
   }
-  if ($near_toFind > 3) {
+  if ($near_toFind > $precision) {
      $id_find="";
   }
   return $id_find;
@@ -610,18 +611,24 @@ sub handler    {
       } else {
          $content_type="-----";
       }
-      if ($controlCookie eq "") {       
-			if (index($user_agent,'UP.Link') >0 ) {
-			   $user_agent=substr($user_agent,0,index($user_agent,'UP.Link'));
-			}
-			if ($user_agent) {
-				$id=FirstMethod($user_agent);
-				$method="FirstMethod($id),$user_agent";
-			}
-			if ($id eq "") {
-			 $id=SecondMethod($user_agent);
-				$method="SecondMethod($id),$user_agent";
-			}
+	  if ($controlCookie eq "") {       
+		  	if (index($user_agent,'UP.Link') >0 ) {
+			 	$user_agent=substr($user_agent,0,index($user_agent,'UP.Link'));
+		  	}
+            if ($cacheArray{$user_agent}) {
+              $id=$cacheArray{$user_agent};
+            } else {
+				if ($user_agent) {
+					$id=FirstMethod($user_agent);
+					$method="FirstMethod($id),$user_agent";
+				}
+				if ($id eq "") {
+			    	$id=SecondMethod($user_agent,3);
+					$method="SecondMethod($id),$user_agent";
+				}
+            	$cacheArray{$user_agent}=$id;
+            }
+
        	if ($id ne "") {
        	    #
        	    # calling fallbac function
@@ -654,8 +661,10 @@ sub handler    {
 						}
 					}
 				 }
-          	     $s->warn("$repasshanlder,$method -->$variabile");
-         	 }
+				 if ($method) {
+          	       $s->warn("New id found - $method -->$variabile");
+          	     }
+         }
       	} else {
             $variabile="device=false";
             $s->warn("Device not found:$user_agent");
@@ -669,6 +678,7 @@ sub handler    {
          $ArrayCapFound{'device_claims_web_support'}='false';
          $s->warn("USING CACHE:$variabile");
       }
+
       	unless ($f->ctx) {
       	  if ($ImageType{$content_type}) { 
       	     $dummy="";
@@ -686,7 +696,7 @@ sub handler    {
 
 
 	  if ($ImageType{$content_type}) {
-	          if ($convertimage eq "true") {
+	          if ($convertimage eq "true" && $variabile ne "device=false") {
 				  my $width=$ArrayCapFound{'max_image_width'};
 				  my $imagefile="$resizeimagedirectory/$width.$file";
 				  #
@@ -698,6 +708,7 @@ sub handler    {
 				  } else {
 				     $imageToConvert="$docroot$uri";
 				  }
+				  $return_value=Apache2::Const::DECLINED;
 				  if ( -e "$imageToConvert") {
 					  if ( -e "$docroot$imagefile") {
 						$dummy="";
@@ -719,8 +730,10 @@ sub handler    {
 					         $s->err("Can not create $docroot$imagefile");
 					      }
 					  }
-					  $f->r->headers_out->set(Location => $imagefile);
-					  $f->r->status(Apache2::Const::REDIRECT);
+					  #$f->r->headers_out->set(Location => $imagefile);
+					  #
+					  #$f->r->status(Apache2::Const::REDIRECT);
+					  $f->r->internal_redirect($imagefile);
 					  $return_value=Apache2::Const::DECLINED;
 				  }
               }
@@ -772,8 +785,12 @@ sub handler    {
 					 }
 				}
 				if ($convertonlyimages ne 'true') {
-                   $f->r->headers_out->set(Location => $location);
-                   $f->r->status(Apache2::Const::REDIRECT);
+				   if (substr($location,0,5) eq "http:") {
+                      $f->r->headers_out->set(Location => $location);
+                      $f->r->status(Apache2::Const::REDIRECT);
+                   } else {
+                   	  $f->r->internal_redirect($location);
+                   }
                 }
                 $return_value=Apache2::Const::DECLINED;
 	  }
