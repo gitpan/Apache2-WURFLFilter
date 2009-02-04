@@ -21,6 +21,7 @@ WriteMakefile(
                      'Apache2::Const'        => 0, 
 					 'Image::Resize'        => 0,
 					 'LWP::Simple'        => 0,
+					 'File::Copy' => 0,
 					 'IO::Uncompress::Unzip'    => 0 
 					 
                      },

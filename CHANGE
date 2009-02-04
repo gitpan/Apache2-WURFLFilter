@@ -1,3 +1,6 @@
+WURFLFilter 1.41
+Fixed bugs for internal redirect feature and for images mechanism
+
 WURFLFilter 1.4
 Increase performance with a new cache system mechanism
 

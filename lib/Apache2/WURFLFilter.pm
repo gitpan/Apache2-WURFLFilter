@@ -25,12 +25,15 @@ package Apache2::WURFLFilter;
   use Image::Resize;
   use Apache2::Const -compile => qw(OK REDIRECT DECLINED);
   use IO::Uncompress::Unzip qw(unzip $UnzipError) ;
+  use File::Copy;
+  use constant BUFF_LEN => 1024;
+
   #
   # Define the global environment
   # 
 
   use vars qw($VERSION);
-  $VERSION= "1.4";
+  $VERSION= "1.41";
   my %Capability;
   my %Array_fb;
   my %Array_id;
@@ -40,6 +43,9 @@ package Apache2::WURFLFilter;
   my %CHTMLUrl;
   my %ImageType;
   my %cacheArray;
+  my %cacheArray2;
+  my %cacheArray_toview;
+  
 
   my $intelliswitch="false";
   my $mobileversionurl;
@@ -585,7 +591,7 @@ sub existCookie {
     }   
     return ($response,%ArrayCapFoundToPass);
 }
-sub handler    { 
+sub handler    {
       my $f = shift;
       my $capability2;
       my $s = $f->r->server;
@@ -604,6 +610,7 @@ sub handler    {
       my $type_redirect="internal";
       my $return_value;
 	  my $dummy;
+	  my $variabile2="";
       my ($controlCookie,%ArrayCapFound)=existCookie($cookie);
       $repasshanlder=$repasshanlder + 1;
       if ($content_type) {
@@ -615,6 +622,23 @@ sub handler    {
 		  	if (index($user_agent,'UP.Link') >0 ) {
 			 	$user_agent=substr($user_agent,0,index($user_agent,'UP.Link'));
 		  	}
+            if ($cacheArray2{$user_agent}) {
+       	        #
+       	        # I'm here only for old device
+       	        #
+       	       my @pairs = split(/&/, $cacheArray2{$user_agent});
+       	       my $param_tofound;
+       	       my $string_tofound;
+       	       foreach $param_tofound (@pairs) {      	       
+       	             ($string_tofound,$dummy)=split(/=/, $param_tofound);
+       	             $ArrayCapFound{$string_tofound}=$dummy;
+       	             
+       	       }
+       	       $variabile=$cacheArray_toview{$user_agent};
+       	    } else {
+       	        #
+       	        # I'm here only for new device
+       	        #
             if ($cacheArray{$user_agent}) {
               $id=$cacheArray{$user_agent};
             } else {
@@ -628,51 +652,66 @@ sub handler    {
 				}
             	$cacheArray{$user_agent}=$id;
             }
-
+         
        	if ($id ne "") {
-       	    #
-       	    # calling fallbac function
-       	    #
-          	%ArrayCapFound=FallBack($id);
-           if ($ImageType{$content_type}) {
-				  $dummy="";
-            } else {
-				my $count=0;
-				foreach $capability2 (sort keys %ArrayCapFound) {
-					my $visible=0;
-					if ($showdefaultvariable eq "false" && $capability2 eq 'xhtml_support_level') {
-					   $visible=1;      	           
-					}
-					if ($showdefaultvariable eq "false" && $capability2 eq 'is_wireless_device') {
-					   $visible=1;      	           
-					}
-					if ($showdefaultvariable eq "false" && $capability2 eq 'device_claims_web_support') {
-					   $visible=1;
-					}
-					if ($showdefaultvariable eq "false" && $capability2 eq 'max_image_width') {
-					   $visible=1;
-					}
-					if ($visible == 0) {
-						if ($count==0) {
-						   $count=1;
-							$variabile="$capability2=$ArrayCapFound{$capability2}";
+
+      	        
+          	    %ArrayCapFound=FallBack($id);         
+				if ($ImageType{$content_type}) {
+					  $dummy="";
+				} else {
+					my $count=0;
+					my $count2=0;
+					foreach $capability2 (sort keys %ArrayCapFound) {
+						my $visible=0;
+						if ($count2==0) {
+							$variabile2="$capability2=$ArrayCapFound{$capability2}";
+							$count2=1;
 						} else {
-							$variabile="$variabile&$capability2=$ArrayCapFound{$capability2}";
+							$variabile2="$variabile2&$capability2=$ArrayCapFound{$capability2}";
+						} 						
+						if ($showdefaultvariable eq "false" && $capability2 eq 'xhtml_support_level') {
+						   $visible=1;      	           
 						}
-					}
-				 }
-				 if ($method) {
-          	       $s->warn("New id found - $method -->$variabile");
-          	     }
-         }
+						if ($showdefaultvariable eq "false" && $capability2 eq 'is_wireless_device') {
+						   $visible=1;      	           
+						}
+						if ($showdefaultvariable eq "false" && $capability2 eq 'device_claims_web_support') {
+						   $visible=1;
+						}
+						if ($showdefaultvariable eq "false" && $capability2 eq 'max_image_width') {
+						   $visible=1;
+						}
+						if ($visible == 0) {
+							if ($count==0) {
+							   $count=1;
+								$variabile="$capability2=$ArrayCapFound{$capability2}";
+							} else {
+								$variabile="$variabile&$capability2=$ArrayCapFound{$capability2}";
+							}
+						}
+					 }
+
+					
+					$cacheArray2{$user_agent}=$variabile2;
+					$cacheArray_toview{$user_agent}=$variabile;
+			   }
       	} else {
             $variabile="device=false";
+
             $s->warn("Device not found:$user_agent");
             printNotFound("$user_agent");
             $ArrayCapFound{'device_claims_web_support'}= 'true';
             $ArrayCapFound{'is_wireless_device'}='false';
-	  	}
-
+            $cacheArray2{$user_agent}="$variabile&device_claims_web_support=true&is_wireless_device=false";
+			$cacheArray_toview{$user_agent}=$variabile;
+			$cacheArray{$user_agent}="device_not_found";
+			$method="";
+		}
+		}
+        if ($method) {
+			$s->warn("New id found - $method -->$variabile");
+		} 
       } else {
          $variabile=$controlCookie;
          $ArrayCapFound{'device_claims_web_support'}='false';
@@ -696,13 +735,15 @@ sub handler    {
 
 
 	  if ($ImageType{$content_type}) {
+	          my $imageToConvert;
+	          my $imagefile="";
 	          if ($convertimage eq "true" && $variabile ne "device=false") {
 				  my $width=$ArrayCapFound{'max_image_width'};
-				  my $imagefile="$resizeimagedirectory/$width.$file";
+				  $imagefile="$resizeimagedirectory/$width.$file";
 				  #
 				  # control if image exist
 				  #
-				  my $imageToConvert;
+				 
 				  if ($virtualdirectoryimages eq 'true') {
 				     $imageToConvert="$virtualdirectory$uri";
 				  } else {
@@ -730,12 +771,23 @@ sub handler    {
 					         $s->err("Can not create $docroot$imagefile");
 					      }
 					  }
-					  #$f->r->headers_out->set(Location => $imagefile);
-					  #
-					  #$f->r->status(Apache2::Const::REDIRECT);
 					  $f->r->internal_redirect($imagefile);
-					  $return_value=Apache2::Const::DECLINED;
+					  $return_value=Apache2::Const::DECLINED;	  	
 				  }
+              } else {
+                 if ( -e "$resizeimagedirectory/$file") {
+						$dummy="";
+				  } else {
+						  if ($virtualdirectoryimages eq 'true') {
+							 $imageToConvert="$virtualdirectory$uri";
+						  } else {
+							 $imageToConvert="$docroot$uri";
+						  }			  
+                  		copy($imageToConvert, "$docroot$resizeimagedirectory");
+                  }
+				  
+                  $f->r->internal_redirect("$resizeimagedirectory/$file");
+                  $return_value=Apache2::Const::OK;	
               }
 			  
 	  } else {
@@ -743,6 +795,7 @@ sub handler    {
 				# verify if the device is fullbrowser 
 				#
 				my $add_parameter="";
+				$return_value=Apache2::Const::DECLINED;
 				if ($querystring eq "true") {
 					$add_parameter="\?$variabile";
 				}
@@ -751,28 +804,32 @@ sub handler    {
 				} else {
 					 if ($intelliswitch eq "false") {
 						 $location="$mobileversionurl$add_parameter";
+						 my $key="wurfl";
+						 my $val="$variabile";
+						 $f->r->subprocess_env->set($key => $val);
+
 					 } else {
 						 if ($variabile ne "device=false") {
 								 if ($ArrayCapFound{'xhtml_support_level'} ne "-1") {
 									  foreach $width_toSearch (sort keys %XHTMLUrl) {
 										 if ($width_toSearch <= $ArrayCapFound{'resolution_width'}) {
 											 $location=$XHTMLUrl{$width_toSearch};
-											 $location="$location$add_parameter";
+											 $location="$location/$add_parameter";
 										 }
 									  }
 								 } else {
 									  foreach $width_toSearch (sort keys %WMLUrl) {
 										 if ($width_toSearch <= $ArrayCapFound{'resolution_width'}) {
 											 $location=$WMLUrl{$width_toSearch};
-											 $location="$location$add_parameter";
+											 $location="$location/$add_parameter";
 										 }
 									  }
 								 }
-								 if ($ArrayCapFound{''} eq "true") {
+								 if ($ArrayCapFound{'html_wi_imode_ compact_generic'} eq "true") {
 									  foreach $width_toSearch (sort keys %CHTMLUrl) {
 										 if ($width_toSearch <= $ArrayCapFound{'resolution_width'}) {
 											 $location=$CHTMLUrl{$width_toSearch};
-											 $location="$location$add_parameter";
+											 $location="$location/$add_parameter";
 										 }
 									  }
 								 }
@@ -786,13 +843,15 @@ sub handler    {
 				}
 				if ($convertonlyimages ne 'true') {
 				   if (substr($location,0,5) eq "http:") {
-                      $f->r->headers_out->set(Location => $location);
+				      $s->warn("Redirect: $location");
+                      $f->r->headers_out->set(Location => $location);                      
                       $f->r->status(Apache2::Const::REDIRECT);
                    } else {
+                      $s->warn("InternalRedirect: $location");
                    	  $f->r->internal_redirect($location);
                    }
                 }
-                $return_value=Apache2::Const::DECLINED;
+                
 	  }
 
 	  
