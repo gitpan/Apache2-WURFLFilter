@@ -1,3 +1,6 @@
+WURFLFilter 1.42
+Fixed bug for try to read zip file like an xml file (case is DownloadZipFile setted false)
+
 WURFLFilter 1.41
 Fixed bugs for internal redirect feature and for images mechanism
 

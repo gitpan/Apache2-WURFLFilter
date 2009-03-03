@@ -33,7 +33,7 @@ package Apache2::WURFLFilter;
   # 
 
   use vars qw($VERSION);
-  $VERSION= "1.41";
+  $VERSION= "1.42";
   my %Capability;
   my %Array_fb;
   my %Array_id;
@@ -298,10 +298,10 @@ sub loadConfigFile {
 	    printLog("----------------------------------");
 	    if ($wurflnetdownload eq "true") {
 	        printLog("Start downloading  WURFL.xml from $downloadwurflurl");
-	        my $content = get $downloadwurflurl;
+	        my $content = get ($downloadwurflurl);
 	        printLog("Finish downloading  WURFL.xml");
 	        if ($content eq "") {
-   		        printLog("Couldn't get $downloadwurflurl. Errore:$content");
+   		        printLog("Couldn't get $downloadwurflurl.");
 		   		ModPerl::Util::exit();
 	        }
 	        
@@ -365,6 +365,11 @@ sub loadConfigFile {
 		close IN;
 		my $arrLen = scalar %Array_id;
 		($arrLen,$dummy)= split(/\//, $arrLen);
+		if ($arrLen == 0) {
+		     printLog("Error the file probably is not a wurfl file, control the url or path");
+		     printLog("Control also if the file is compress file, and DownloadZipFile parameter is seted false");
+		     ModPerl::Util::exit();
+		}
         printLog("This version of WURFL have $arrLen UserAgent");
         printLog("End loading  WURFL.xml");
 }
