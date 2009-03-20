@@ -33,7 +33,7 @@ package Apache2::WURFLFilter;
   # 
 
   use vars qw($VERSION);
-  $VERSION= "1.5";
+  $VERSION= "1.51";
   my %Capability;
   my %Array_fb;
   my %Array_id;
@@ -556,9 +556,6 @@ sub handler    {
       }
 	  if ($controlCookie eq "") {       
 		  	if (index($user_agent,'UP.Link') >0 ) {
-			 	$user_agent=substr($user_agent,0,index($user_agent,'UP.Link'));
-		  	}
-		  	if (index($user_agent,'UP.Browser') >0 ) {
 			 	$user_agent=substr($user_agent,0,index($user_agent,'UP.Link'));
 		  	}
 		  	if ($cacheArray2{$user_agent}) {

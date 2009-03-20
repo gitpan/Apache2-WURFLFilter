@@ -1,3 +1,6 @@
+WURFLFilter 1.51
+Fixed Bugs
+
 WURFLFilter 1.5
 Add a new method call IdentifyUAMethod, with this method increase the performance of device identification
 Deprecated FirstMethod
