@@ -33,7 +33,7 @@ package Apache2::WURFLFilter;
   # 
 
   use vars qw($VERSION);
-  $VERSION= "1.42";
+  $VERSION= "1.5";
   my %Capability;
   my %Array_fb;
   my %Array_id;
@@ -395,8 +395,13 @@ sub parseWURFLFile {
 				 if (($fb) && ($id)) {	     	   
 					$Array_fb{"$id"}=$fb;
 				 }
-				 if (($ua) && ($id)) {	     	   
-						 $Array_id{"$ua"}=$id;
+				 if (($ua) && ($id)) {
+				         my %ParseUA=GetMultipleUa($ua);
+				         my $pair;
+				         foreach $pair (reverse sort { $a <=> $b }  keys %ParseUA) {
+						 		my $dummy=$ParseUA{$pair};
+						        $Array_id{$dummy}=$id;
+						 }
 				 }
 		 }
 		 if ($record =~ /\<capability/o) { 
@@ -497,80 +502,6 @@ sub FallBack {
    return %ArrayCapFoundToPass;
 
 }
-
-sub FirstMethod {
-  my ($UserAgent) = @_;
-  my $ind=0;
-  my %ArrayPM;
-  my $pair;
-  my $pair2;
-  my $id_find="";
-  
-  my @pairs = split(/\ /, $UserAgent);
-  $ArrayPM{0}="";
-  foreach $pair (@pairs)
-  {
-       
-       if ($ind == 0) {
-            $ArrayPM{$ind}=$pair;
-	          $ind=$ind+1;
-       } else {
-         my @pairs2 = split(/\//, $pair);
-         my $count=0;
-         if ($pair =~ /\//o) {
-	         foreach $pair2 (@pairs2)
-    	     {
-        	   if ($count == 0) {
-            	$ArrayPM{$ind}="$ArrayPM{$ind-1} $pair2";
-     	    	$ind=$ind+1;
-        	   } else {
-            	$ArrayPM{$ind}="$ArrayPM{$ind-1}/$pair2";
-     	    	$ind=$ind+1;
-     	   	 	}
-     	       $count=$count+1;
-         	 }
-         } else {
-	         $ArrayPM{$ind}="$ArrayPM{$ind-1} $pair";
-	         	          $ind=$ind+1;
-
-	      }
-	   }
-	  
-  }
-  
-  foreach $pair (reverse sort keys %ArrayPM)
-  {
-      my $dummy=$ArrayPM{$pair};
-      if ($Array_id{$dummy}) {
-         if ($id_find) {
-           my $dummy2="";
-         } else {
-           $id_find=$Array_id{$dummy};
-         }
-      }
-  }
-  return $id_find;
-}
-sub SecondMethod {
-  my ($UserAgent,$precision) = @_;
-  my $id_find="";
-  my $near_toFind=1000;
-  my $ua_toMatch;
-  my $near_toMatch; 
-  
-  foreach $ua_toMatch (%Array_id)
-  {
-        $near_toMatch=distance($UserAgent,$ua_toMatch);     
-        if ($near_toMatch < $near_toFind) {
-           $near_toFind=$near_toMatch;
-           $id_find=$Array_id{$ua_toMatch};
-        }
-  }
-  if ($near_toFind > $precision) {
-     $id_find="";
-  }
-  return $id_find;
-}
 sub existCookie {
     my %ArrayCapFoundToPass;
     my ($cookie_search) = @_;
@@ -627,7 +558,10 @@ sub handler    {
 		  	if (index($user_agent,'UP.Link') >0 ) {
 			 	$user_agent=substr($user_agent,0,index($user_agent,'UP.Link'));
 		  	}
-            if ($cacheArray2{$user_agent}) {
+		  	if (index($user_agent,'UP.Browser') >0 ) {
+			 	$user_agent=substr($user_agent,0,index($user_agent,'UP.Link'));
+		  	}
+		  	if ($cacheArray2{$user_agent}) {
        	        #
        	        # I'm here only for old device
        	        #
@@ -648,12 +582,8 @@ sub handler    {
               $id=$cacheArray{$user_agent};
             } else {
 				if ($user_agent) {
-					$id=FirstMethod($user_agent);
-					$method="FirstMethod($id),$user_agent";
-				}
-				if ($id eq "") {
-			    	$id=SecondMethod($user_agent,3);
-					$method="SecondMethod($id),$user_agent";
+					$id=IdentifyUAMethod($user_agent,3);
+					$method="IdentifyUAMethod($id),$user_agent";
 				}
             	$cacheArray{$user_agent}=$id;
             }
@@ -863,6 +793,98 @@ sub handler    {
       return $return_value;
       
 } 
+sub IdentifyUAMethod {
+  my ($UserAgent,$precision) = @_;
+  my $ind=0;
+  my %ArrayPM;
+  my $pair;
+  my $pair2;
+  my $id_find="";
+  my $dummy;
+  my $ua_toMatch;
+  my $near_toFind;
+  my $near_toMatch;
+  my %ArrayUAType=GetMultipleUa($UserAgent);  
+  foreach $pair (reverse sort { $a <=> $b }  keys %ArrayUAType)
+  {
+      my $dummy=$ArrayUAType{$pair};
+      if ($Array_id{$dummy}) {
+         if ($id_find) {
+           my $dummy2="";
+         } else {
+           $id_find=$Array_id{$dummy};
+         }
+      }
+  }
+  if ($id_find eq "") {
+    foreach $pair (reverse sort { $a <=> $b }  keys %ArrayUAType) {
+		if ($id_find eq "" && $ArrayPM{$pair} ne "") {
+			foreach $ua_toMatch (%Array_id) {
+				$dummy=$ArrayUAType{$pair};
+				$near_toMatch=distance($dummy,$ua_toMatch);     
+				 if ($near_toMatch < $near_toFind) {
+					$near_toFind=$near_toMatch;
+					$id_find=$Array_id{$ua_toMatch};
+				 }
+			}
+			if ($near_toFind > $precision) {
+				$id_find="";
+			}
+		}
+  	}
+  }
+  return $id_find;
+}
+sub GetMultipleUa {
+  my ($UserAgent) = @_;
+  my %ArrayPM;
+  my $pair;
+  my $ind=0;
+  my $pairs3;
+  my %ArrayUAparse;
+  
+  my @pairs = split(/\ /, $UserAgent);
+  foreach $pair (@pairs)
+  { 
+     if ($ind==0) {
+	     if ($pair =~ /\//o) {     	
+	     	my @pairs2 = split(/\//, $pair);
+    	  	foreach $pairs3 (@pairs2) {
+			     if ($ind==0) {
+			       $ind=$ind+1;
+			       $ArrayUAparse{$ind}=$pairs3;
+		 	     } else {
+		 	       $ind=$ind+1;
+		    	   $ArrayUAparse{$ind}="$ArrayUAparse{$ind-1}\/$pairs3";
+		    	 }
+     	 	}
+     	} else {
+	      $ind=$ind+1;
+     	  $ArrayUAparse{$ind}="$pair";
+     	}
+     } else {
+        if ($pair =~ /\//o) {
+          my $ind2=0;
+          my @pairs2 = split(/\//, $pair);
+          foreach $pairs3 (@pairs2) {
+			     if ($ind2==0) {
+			       $ind=$ind+1;
+			       $ind2=1;
+			       $ArrayUAparse{$ind}="$ArrayUAparse{$ind-1} $pairs3";
+		 	     } else {
+		 	       $ind=$ind+1;
+		    	   $ArrayUAparse{$ind}="$ArrayUAparse{$ind-1}\/$pairs3";
+		    	 }             
+          }
+		} else {
+	    	$ind=$ind+1;
+     		$ArrayUAparse{$ind}="$ArrayUAparse{$ind-1} $pair";
+     	}
+     }
+  }
+  return %ArrayUAparse;
+
+}
   1; 
 =head1 NAME
 

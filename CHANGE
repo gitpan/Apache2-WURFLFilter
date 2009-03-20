@@ -1,3 +1,8 @@
+WURFLFilter 1.5
+Add a new method call IdentifyUAMethod, with this method increase the performance of device identification
+Deprecated FirstMethod
+Deprecated SecondMethod
+
 WURFLFilter 1.42
 Fixed bug for try to read zip file like an xml file (case is DownloadZipFile setted false)
 
