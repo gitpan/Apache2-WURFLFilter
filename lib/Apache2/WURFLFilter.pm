@@ -33,7 +33,7 @@ package Apache2::WURFLFilter;
   # 
 
   use vars qw($VERSION);
-  $VERSION= "1.51";
+  $VERSION= "1.52";
   my %Capability;
   my %Array_fb;
   my %Array_id;
@@ -363,7 +363,7 @@ sub loadConfigFile {
 			}
 		}
 		close IN;
-		my $arrLen = scalar %Array_id;
+		my $arrLen = scalar %Array_fb;
 		($arrLen,$dummy)= split(/\//, $arrLen);
 		if ($arrLen == 0) {
 		     printLog("Error the file probably is not a wurfl file, control the url or path");
@@ -391,8 +391,20 @@ sub parseWURFLFile {
 		    $id="$val";
 		 } 
 	      if ($record =~ /\<device/o) {
-			($null,$id,$null2,$ua,$null3,$fb)=split(/\"/, $record);
-				 if (($fb) && ($id)) {	     	   
+	        if (index($record,'user_agent') > 0 ) {
+	           $ua=substr($record,index($record,'user_agent') + 12,index($record,'"',index($record,'user_agent')+ 13)- index($record,'user_agent') - 12);
+	           #print "$ua\n";
+	           
+	        }	        
+	        if (index($record,'id') > 0 ) {
+	           $id=substr($record,index($record,'id') + 4,index($record,'"',index($record,'id')+ 5)- index($record,'id') - 4);	           
+	           #print "$id\n";
+	        }	        
+	        if (index($record,'fall_back') > 0 ) {
+	           $fb=substr($record,index($record,'fall_back') + 11,index($record,'"',index($record,'fall_back')+ 12)- index($record,'fall_back') - 11);	           
+	           #print "$fb\n";
+	        }
+	        if (($fb) && ($id)) {	     	   
 					$Array_fb{"$id"}=$fb;
 				 }
 				 if (($ua) && ($id)) {
@@ -815,7 +827,7 @@ sub IdentifyUAMethod {
   }
   if ($id_find eq "") {
     foreach $pair (reverse sort { $a <=> $b }  keys %ArrayUAType) {
-		if ($id_find eq "" && $ArrayPM{$pair} ne "") {
+		if ($ArrayUAType{$pair}) {
 			foreach $ua_toMatch (%Array_id) {
 				$dummy=$ArrayUAType{$pair};
 				$near_toMatch=distance($dummy,$ua_toMatch);     
@@ -892,6 +904,7 @@ Apache2::WURFLFilter - is a Apache Mobile Filter that manage content (text & ima
 
 CGI
 Apache2
+Text::LevenshteinXS
 
 =head1 DESCRIPTION
 
