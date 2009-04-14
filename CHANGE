@@ -1,4 +1,8 @@
-WURFLFilter 1.51
+WURFLFilter 1.53
+Fixed Bugs
+Convert all messages from warn to debug, only warn message is for new o strange User Agent
+
+WURFLFilter 1.52
 Fixed Bugs
 Parse Wurfl.xml method more clean
 

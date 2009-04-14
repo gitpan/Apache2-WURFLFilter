@@ -33,7 +33,7 @@ package Apache2::WURFLFilter;
   # 
 
   use vars qw($VERSION);
-  $VERSION= "1.52";
+  $VERSION= "1.53";
   my %Capability;
   my %Array_fb;
   my %Array_id;
@@ -654,12 +654,12 @@ sub handler    {
 		}
 		}
         if ($method) {
-			$s->warn("New id found - $method -->$variabile");
+			$f->r->log->debug("New id found - $method -->$variabile");
 		} 
       } else {
          $variabile=$controlCookie;
          $ArrayCapFound{'device_claims_web_support'}='false';
-         $s->warn("USING CACHE:$variabile");
+         $f->r->log->debug("USING CACHE:$variabile");
       }
 
       	unless ($f->ctx) {
@@ -668,7 +668,7 @@ sub handler    {
       	  } else {
 			   if ($ArrayCapFound{'device_claims_web_support'} eq 'false') {
 				   if ($controlCookie eq "" && $cookieset eq "true" ) {
-					   $s->warn("Cookie: $variabile");
+					   $f->r->log->debug("Cookie: $variabile");
 					   $f->r->err_headers_out->set ('Set-Cookie' => "wurfl=$variabile");
 				   }
 				   $f->ctx(1);
@@ -787,11 +787,11 @@ sub handler    {
 				}
 				if ($convertonlyimages ne 'true') {
 				   if (substr($location,0,5) eq "http:") {
-				      $s->warn("Redirect: $location");
+				      $f->r->log->debug("Redirect: $location");
                       $f->r->headers_out->set(Location => $location);                      
                       $f->r->status(Apache2::Const::REDIRECT);
                    } else {
-                      $s->warn("InternalRedirect: $location");
+                      $f->r->log->debug("InternalRedirect: $location");
                    	  $f->r->internal_redirect($location);
                    }
                 }
@@ -811,7 +811,7 @@ sub IdentifyUAMethod {
   my $id_find="";
   my $dummy;
   my $ua_toMatch;
-  my $near_toFind;
+  my $near_toFind=100;
   my $near_toMatch;
   my %ArrayUAType=GetMultipleUa($UserAgent);  
   foreach $pair (reverse sort { $a <=> $b }  keys %ArrayUAType)
