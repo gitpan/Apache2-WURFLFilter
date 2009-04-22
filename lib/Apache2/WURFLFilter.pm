@@ -33,7 +33,7 @@ package Apache2::WURFLFilter;
   # 
 
   use vars qw($VERSION);
-  $VERSION= "1.53";
+  $VERSION= "1.54";
   my %Capability;
   my %Array_fb;
   my %Array_id;
@@ -64,7 +64,7 @@ package Apache2::WURFLFilter;
   my $repasshanlder=0;
   my $globalpassvariable="";
   my $log4wurfl="";
-  my $xml_config="false";
+  
   
   $ImageType{'png'}="png";
   $ImageType{'gif'}="gif";
@@ -80,9 +80,7 @@ package Apache2::WURFLFilter;
   # Check if MOBILE_HOME is setting in apache httpd.conf file for example:
   # PerlSetEnv MOBILE_HOME <apache_directory>/MobileFilter
   #
-  if ($ENV{XML_CONFIG}) {
-     $xml_config=$ENV{XML_CONFIG};
-  } 
+   
   printLog("WURFLFilter Version $VERSION");
   if ($ENV{MOBILE_HOME}) {
 	  &loadConfigFile("$ENV{MOBILE_HOME}/WURFLFilterConfig.xml","$ENV{MOBILE_HOME}/wurfl.xml");
@@ -100,100 +98,6 @@ sub loadConfigFile {
 	     my $capability;
 	     my $r_id;
 	     my $dummy;
-	     if ($xml_config eq 'true') {
-			 if (-e "$file") {
-				 printLog("Start loading  WURFLMobile.config");
-				 open (IN, "$file");
-					 while (<IN>) {
-						 if ($_ =~ /\<capability\>/o) {
-							$capability=extValueTag('capability',$_);
-							$Capability{$capability}=$capability;			  
-						 }
-						 if ($_ =~ /\<MobileVersionUrl\>/o) {
-							$mobileversionurl=extValueTag('MobileVersionUrl',$_);
-						 }			
-						 if ($_ =~ /\<IntelliSwitch\>/o) {
-							$intelliswitch=extValueTag('IntelliSwitch',$_);
-						 }
-						 if ($_ =~ /\<XHTMLUrl/o) {
-							$capability=extValueTag('XHTMLUrl',$_);
-							($null,$val,$null2)=split(/\"/, $_);
-							$XHTMLUrl{$val}=$capability;
-							printLog("XHTMLUrl is: width=$val and URL=$capability");
-						 }				
-						 if ($_ =~ /\<WMLUrl/o) {
-							$capability=extValueTag('WMLUrl',$_);
-							($null,$val,$null2)=split(/\"/, $_);
-							$WMLUrl{$val}=$capability;	
-							printLog("WMLUrl is: width=$val and URL=$capability");
-						 }				
-						 if ($_ =~ /\<CHTMLUrl/o) {
-							$capability=extValueTag('CHTMLUrl',$_);
-							($null,$val,$null2)=split(/\"/, $_);
-							$CHTMLUrl{$val}=$capability;
-							printLog("CHTMLUrl is: width=$val and URL=$capability");
-						 }				
-						
-						 if ($_ =~ /\<FullBrowserUrl\>/o) {
-							$fullbrowserurl=extValueTag('FullBrowserUrl',$_);
-						 }			
-						 if ($_ =~ /\<CookieSet\>/o) {
-							$cookieset=extValueTag('CookieSet',$_);
-							printLog("CookieSet is:           $cookieset");
-						 }			
-						 if ($_ =~ /\<PassQueryStringSet\>/o) {
-							$querystring=extValueTag('PassQueryStringSet',$_);
-							printLog("PassQueryStringSet is : $querystring");
-						 }			
-						 if ($_ =~ /\<ShowDefaultVariable\>/o) {
-							$showdefaultvariable=extValueTag('ShowDefaultVariable',$_);
-							printLog("ShowDefaultVariable is: $showdefaultvariable");
-						 }			
-						 if ($_ =~ /\<WurflNetDownload\>/o) {
-							$wurflnetdownload=extValueTag('WurflNetDownload',$_);
-							printLog("WurflNetDownload is:    $wurflnetdownload");
-							
-						 }			
-						 if ($_ =~ /\<DownloadWurflURL\>/o) {
-							$downloadwurflurl=extValueTag('DownloadWurflURL',$_);
-						 }			
-						 if ($_ =~ /\<DownloadZipFile\>/o) {
-							$downloadzipfile=extValueTag('DownloadZipFile',$_);
-							printLog("DownloadZipFile is:     $downloadzipfile");
-						 }
-						 if ($_ =~ /\<ConvertImage\>/o) {
-							$convertimage=extValueTag('ConvertImage',$_);
-							printLog("ConvertImage is :       $convertimage");
-						 }			
-						 if ($_ =~ /\<ResizeImageDirectory\>/o) {
-							$resizeimagedirectory=extValueTag('ResizeImageDirectory',$_);
-						 }			
-						 if ($_ =~ /\<WebAppConvertImages\>/o) {
-							$virtualdirectoryimages=extValueTag('WebAppConvertImages',$_);
-							printLog("WebAppConvertImages is: $virtualdirectoryimages");
-						 }	
-						 
-						 if ($_ =~ /\<WebAppDirectory\>/o) {
-							$virtualdirectory=extValueTag('WebAppDirectory',$_);
-						 }			
-						 if ($_ =~ /\<ConvertOnlyImages\>/o) {
-							$convertonlyimages=extValueTag('ConvertOnlyImages',$_);
-							printLog("ConvertOnlyImages is:   $convertonlyimages");
-						 }	
-						 if ($_ =~ /\<Log4WurflNoDeviceDetect\>/o) {
-							$log4wurfl=extValueTag('Log4WurflNoDeviceDetect',$_);
-						 }	
-	
-						 
-	
-				 }				
-				 
-			 } else {
-			   printLog("File $file not found");
-			   ModPerl::Util::exit();
-			  }
-			  close IN;
-	      } else {
 	      	#The filter
 	      	printLog("Start read configuration from httpd.conf");
 	      	 if ($ENV{MobileVersionUrl}) {
@@ -288,7 +192,6 @@ sub loadConfigFile {
 				}
 			 }	             
 
-	      }
           if ($log4wurfl eq "") {
    		     printLog("The parameter Log4WurflNoDeviceDetect must be defined into WURFLMobile.config");
 		     ModPerl::Util::exit();
@@ -372,10 +275,6 @@ sub loadConfigFile {
 		}
         printLog("This version of WURFL have $arrLen UserAgent");
         printLog("End loading  WURFL.xml");
-}
-sub internalParseTag {
-         my ($tag, $parameter) = @_;
-         $tag=substr($tag, index($tag,'<'),index($tag,'>'));         
 }
 sub parseWURFLFile {
          my ($record,$val) = @_;

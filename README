@@ -15,6 +15,22 @@ WURFL.xml
 
 Knowledge about Apache configuration
 
+Library I used:
+
+Apache2::Filter
+Apache2::RequestRec
+Apache2::RequestUtil
+Apache2::SubRequest
+Apache2::Log
+CGI::Cookie
+Text::LevenshteinXS
+APR::Table
+LWP::Simple
+Image::Resize
+Apache2::Const
+IO::Uncompress::Unzip
+File::Copy
+
 INSTALLATION
 You need install and configure Apache 2.x
 
