@@ -4,5 +4,4 @@ Makefile.PL
 MANIFEST
 CHANGE
 README
-WURFLFilterConfig.xml
 META.yml                                 Module meta-data (added by MakeMaker)

@@ -1,3 +1,6 @@
+WURFLFilter 1.55
+Fixed critical bugs now is recognize correctly FullBrowser
+
 WURFLFilter 1.54
 Delete Parameter XML_CONFIG now the configuration of the filter is possible only in httpd.conf file
 

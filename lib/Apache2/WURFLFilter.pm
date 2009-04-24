@@ -33,7 +33,7 @@ package Apache2::WURFLFilter;
   # 
 
   use vars qw($VERSION);
-  $VERSION= "1.54";
+  $VERSION= "1.55";
   my %Capability;
   my %Array_fb;
   my %Array_id;
@@ -45,6 +45,8 @@ package Apache2::WURFLFilter;
   my %cacheArray;
   my %cacheArray2;
   my %cacheArray_toview;
+  my %arrayFullBrowser;
+  my %arrayMobileBrowser;
   
 
   my $intelliswitch="false";
@@ -64,7 +66,12 @@ package Apache2::WURFLFilter;
   my $repasshanlder=0;
   my $globalpassvariable="";
   my $log4wurfl="";
-  
+  $arrayFullBrowser{'Macintosh'}="Macintosh";
+  $arrayFullBrowser{'Linux i686'}="Linux i686";
+  $arrayFullBrowser{'Linux x86_64'}="Linux i686";
+  $arrayFullBrowser{'Windows NT'}="Windows NT";
+  $arrayMobileBrowser{'HTC'}="HTC";
+  $arrayMobileBrowser{'Xda'}="Xda";
   
   $ImageType{'png'}="png";
   $ImageType{'gif'}="gif";
@@ -309,9 +316,12 @@ sub parseWURFLFile {
 				 if (($ua) && ($id)) {
 				         my %ParseUA=GetMultipleUa($ua);
 				         my $pair;
+				         my $arrUaLen = scalar %ParseUA;
+				         my $contaUA=0;
 				         foreach $pair (reverse sort { $a <=> $b }  keys %ParseUA) {
-						 		my $dummy=$ParseUA{$pair};
-						        $Array_id{$dummy}=$id;
+						 			my $dummy=$ParseUA{$pair};
+						            $Array_id{$dummy}=$id;
+				                $contaUA=$contaUA-1;
 						 }
 				 }
 		 }
@@ -458,6 +468,18 @@ sub handler    {
       my $return_value;
 	  my $dummy;
 	  my $variabile2="";
+	  my $fullBrowser='false';
+	  foreach $dummy (keys %arrayFullBrowser) {
+		  	   if (index($user_agent,$dummy) != -1) {
+		  	      $fullBrowser='true';
+		  	   }
+	  }
+	  foreach $dummy (keys %arrayMobileBrowser) {
+		  	   if (index($user_agent,$dummy) != -1) {
+		  	      $fullBrowser='false';
+		  	   }
+	  }
+
       my ($controlCookie,%ArrayCapFound)=existCookie($cookie);
       $repasshanlder=$repasshanlder + 1;
       if ($content_type) {
@@ -465,102 +487,105 @@ sub handler    {
       } else {
          $content_type="-----";
       }
-	  if ($controlCookie eq "") {       
-		  	if (index($user_agent,'UP.Link') >0 ) {
-			 	$user_agent=substr($user_agent,0,index($user_agent,'UP.Link'));
-		  	}
-		  	if ($cacheArray2{$user_agent}) {
-       	        #
-       	        # I'm here only for old device
-       	        #
-       	       my @pairs = split(/&/, $cacheArray2{$user_agent});
-       	       my $param_tofound;
-       	       my $string_tofound;
-       	       foreach $param_tofound (@pairs) {      	       
-       	             ($string_tofound,$dummy)=split(/=/, $param_tofound);
-       	             $ArrayCapFound{$string_tofound}=$dummy;
-       	             
-       	       }
-       	       $variabile=$cacheArray_toview{$user_agent};
-       	    } else {
-       	        #
-       	        # I'm here only for new device
-       	        #
-            if ($cacheArray{$user_agent}) {
-              $id=$cacheArray{$user_agent};
-            } else {
-				if ($user_agent) {
-					$id=IdentifyUAMethod($user_agent,3);
-					$method="IdentifyUAMethod($id),$user_agent";
-				}
-            	$cacheArray{$user_agent}=$id;
-            }
-         
-       	if ($id ne "") {
-
-      	        
-          	    %ArrayCapFound=FallBack($id);         
-				if ($ImageType{$content_type}) {
-					  $dummy="";
-				} else {
-					my $count=0;
-					my $count2=0;
-					foreach $capability2 (sort keys %ArrayCapFound) {
-						my $visible=0;
-						if ($count2==0) {
-							$variabile2="$capability2=$ArrayCapFound{$capability2}";
-							$count2=1;
-						} else {
-							$variabile2="$variabile2&$capability2=$ArrayCapFound{$capability2}";
-						} 						
-						if ($showdefaultvariable eq "false" && $capability2 eq 'xhtml_support_level') {
-						   $visible=1;      	           
-						}
-						if ($showdefaultvariable eq "false" && $capability2 eq 'is_wireless_device') {
-						   $visible=1;      	           
-						}
-						if ($showdefaultvariable eq "false" && $capability2 eq 'device_claims_web_support') {
-						   $visible=1;
-						}
-						if ($showdefaultvariable eq "false" && $capability2 eq 'max_image_width') {
-						   $visible=1;
-						}
-						if ($visible == 0) {
-							if ($count==0) {
-							   $count=1;
-								$variabile="$capability2=$ArrayCapFound{$capability2}";
+      if ($fullBrowser eq 'false') {
+			  if ($controlCookie eq "") {       
+					if (index($user_agent,'UP.Link') >0 ) {
+						$user_agent=substr($user_agent,0,index($user_agent,'UP.Link'));
+					}
+							if ($cacheArray2{$user_agent}) {
+								#
+								# I'm here only for old device
+								#
+							   my @pairs = split(/&/, $cacheArray2{$user_agent});
+							   my $param_tofound;
+							   my $string_tofound;
+							   foreach $param_tofound (@pairs) {      	       
+									 ($string_tofound,$dummy)=split(/=/, $param_tofound);
+									 $ArrayCapFound{$string_tofound}=$dummy;
+									 
+							   }
+							   $variabile=$cacheArray_toview{$user_agent};
 							} else {
-								$variabile="$variabile&$capability2=$ArrayCapFound{$capability2}";
+								#
+								# I'm here only for new device
+								#
+							if ($cacheArray{$user_agent}) {
+							  $id=$cacheArray{$user_agent};
+							} else {
+								if ($user_agent) {
+									$id=IdentifyUAMethod($user_agent,2);
+									$method="IdentifyUAMethod($id),$user_agent";
+								}
+								$cacheArray{$user_agent}=$id;
 							}
-						}
-					 }
-
-					
-					$cacheArray2{$user_agent}=$variabile2;
+				if ($id ne "") {
+		
+						
+						%ArrayCapFound=FallBack($id);         
+						if ($ImageType{$content_type}) {
+							  $dummy="";
+						} else {
+							my $count=0;
+							my $count2=0;
+							foreach $capability2 (sort keys %ArrayCapFound) {
+								my $visible=0;
+								if ($count2==0) {
+									$variabile2="$capability2=$ArrayCapFound{$capability2}";
+									$count2=1;
+								} else {
+									$variabile2="$variabile2&$capability2=$ArrayCapFound{$capability2}";
+								} 						
+								if ($showdefaultvariable eq "false" && $capability2 eq 'xhtml_support_level') {
+								   $visible=1;      	           
+								}
+								if ($showdefaultvariable eq "false" && $capability2 eq 'is_wireless_device') {
+								   $visible=1;      	           
+								}
+								if ($showdefaultvariable eq "false" && $capability2 eq 'device_claims_web_support') {
+								   $visible=1;
+								}
+								if ($showdefaultvariable eq "false" && $capability2 eq 'max_image_width') {
+								   $visible=1;
+								}
+								if ($visible == 0) {
+									if ($count==0) {
+									   $count=1;
+										$variabile="$capability2=$ArrayCapFound{$capability2}";
+									} else {
+										$variabile="$variabile&$capability2=$ArrayCapFound{$capability2}";
+									}
+								}
+							 }
+		
+							
+							$cacheArray2{$user_agent}=$variabile2;
+							$cacheArray_toview{$user_agent}=$variabile;
+					   }
+				} else {
+						$variabile="device=false";            
+						printNotFound("$user_agent");
+						$s->warn("Device not found:$user_agent");
+					$ArrayCapFound{'device_claims_web_support'}= 'true';
+					$ArrayCapFound{'is_wireless_device'}='false';
+					$cacheArray2{$user_agent}="$variabile&device_claims_web_support=true&is_wireless_device=false";
 					$cacheArray_toview{$user_agent}=$variabile;
-			   }
-      	} else {
-            $variabile="device=false";
-
-            $s->warn("Device not found:$user_agent");
-            printNotFound("$user_agent");
-            $ArrayCapFound{'device_claims_web_support'}= 'true';
-            $ArrayCapFound{'is_wireless_device'}='false';
-            $cacheArray2{$user_agent}="$variabile&device_claims_web_support=true&is_wireless_device=false";
-			$cacheArray_toview{$user_agent}=$variabile;
-			$cacheArray{$user_agent}="device_not_found";
-			$method="";
-		}
-		}
-        if ($method) {
-			$f->r->log->debug("New id found - $method -->$variabile");
-		} 
+					$cacheArray{$user_agent}="device_not_found";
+					$method="";
+				}
+				}
+				if ($method) {
+					$f->r->log->debug("New id found - $method -->$variabile");
+					$s->warn("New id found - $method -->$variabile");
+				} 
+			  } else {
+				 $ArrayCapFound{'device_claims_web_support'}='false';				 
+				 $variabile=$controlCookie;
+				 $f->r->log->debug("USING CACHE:$variabile");
+			  }
       } else {
-         $variabile=$controlCookie;
-         $ArrayCapFound{'device_claims_web_support'}='false';
-         $f->r->log->debug("USING CACHE:$variabile");
+      		$ArrayCapFound{'device_claims_web_support'}='true'; 
+			$ArrayCapFound{'is_wireless_device'}='false';
       }
-
       	unless ($f->ctx) {
       	  if ($ImageType{$content_type}) { 
       	     $dummy="";
@@ -725,6 +750,7 @@ sub IdentifyUAMethod {
       }
   }
   if ($id_find eq "") {
+    
     foreach $pair (reverse sort { $a <=> $b }  keys %ArrayUAType) {
 		if ($ArrayUAType{$pair}) {
 			foreach $ua_toMatch (%Array_id) {
