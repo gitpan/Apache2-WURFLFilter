@@ -1,3 +1,12 @@
+WURFL 1.60
+Added parameter for sttieng "Apache Mobile Filter" into httpd.conf
+Added Parameter LoadWebPatch to set if you want to load a patch file (default is false)
+Added Parameter DirWebPatch to set where you set your patch file
+Added Parameter PatchWurflNetDownload to set if you download from net the patch file (default is false)
+Added Parameter PatchWurflUrl to set the url of the patch file
+Added Parameter RedirectTranscoder to set if you want to redirect if it access with a transcoder system
+Added Parameter RedirectTranscoderUrl to set the url where you want to redirect the transcoder 
+
 WURFLFilter 1.55
 Fixed critical bugs now is recognize correctly FullBrowser
 

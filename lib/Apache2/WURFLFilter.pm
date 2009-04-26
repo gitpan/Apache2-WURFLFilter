@@ -33,11 +33,12 @@ package Apache2::WURFLFilter;
   # 
 
   use vars qw($VERSION);
-  $VERSION= "1.55";
+  $VERSION= "1.60";
   my %Capability;
   my %Array_fb;
   my %Array_id;
   my %Array_DDRcapability;
+
   my %XHTMLUrl;
   my %WMLUrl;
   my %CHTMLUrl;
@@ -45,8 +46,6 @@ package Apache2::WURFLFilter;
   my %cacheArray;
   my %cacheArray2;
   my %cacheArray_toview;
-  my %arrayFullBrowser;
-  my %arrayMobileBrowser;
   
 
   my $intelliswitch="false";
@@ -66,12 +65,12 @@ package Apache2::WURFLFilter;
   my $repasshanlder=0;
   my $globalpassvariable="";
   my $log4wurfl="";
-  $arrayFullBrowser{'Macintosh'}="Macintosh";
-  $arrayFullBrowser{'Linux i686'}="Linux i686";
-  $arrayFullBrowser{'Linux x86_64'}="Linux i686";
-  $arrayFullBrowser{'Windows NT'}="Windows NT";
-  $arrayMobileBrowser{'HTC'}="HTC";
-  $arrayMobileBrowser{'Xda'}="Xda";
+  my $loadwebpatch="false";
+  my $dirwebpatch="";
+  my $patchwurflnetdownload="false"; 
+  my $patchwurflurl="";
+  my $redirecttranscoder="true";
+  my $redirecttranscoderurl="";
   
   $ImageType{'png'}="png";
   $ImageType{'gif'}="gif";
@@ -83,6 +82,7 @@ package Apache2::WURFLFilter;
   $Capability{'device_claims_web_support'}="device_claims_web_support";
   $Capability{'xhtml_support_level'}="xhtml_support_level";
   $Capability{'html_wi_imode_ compact_generic'}="html_wi_imode_ compact_generic";
+  $Capability{'is_transcoder'}="is_transcoder";
   #
   # Check if MOBILE_HOME is setting in apache httpd.conf file for example:
   # PerlSetEnv MOBILE_HOME <apache_directory>/MobileFilter
@@ -198,6 +198,31 @@ sub loadConfigFile {
 				      printLog("WMLUrl is: width=$val and URL=$capability");
 				}
 			 }	             
+	      	 if ($ENV{LoadWebPatch}) {
+				$loadwebpatch=$ENV{LoadWebPatch};
+				printLog("LoadWebPatch is: $loadwebpatch");
+			 }	
+	      	 if ($ENV{DirWebPatch}) {
+				$dirwebpatch=$ENV{DirWebPatch};
+				printLog("DirWebpatch is: $dirwebpatch");
+			 }	
+	      	 if ($ENV{PatchWurflNetDownload}) {
+				$patchwurflnetdownload=$ENV{PatchWurflNetDownload};
+				printLog("PatchWurflNetDownload is: $patchwurflnetdownload");
+			 }	
+	      	 if ($ENV{PatchWurflUrl}) {
+				$patchwurflurl=$ENV{PatchWurflUrl};
+				printLog("PatchWurflUrl is: $patchwurflurl");
+			 }	
+	      	 if ($ENV{RedirectTranscoder}) {
+				$redirecttranscoder=$ENV{RedirectTranscoder};
+				printLog("RedirectTranscoder is: $redirecttranscoder");
+			 }	
+	      	 if ($ENV{RedirectTranscoderUrl}) {
+				$redirecttranscoderurl=$ENV{RedirectTranscoderUrl};
+				printLog("RedirectTranscoderUrl is: $redirecttranscoderurl");
+			 }	
+
 
           if ($log4wurfl eq "") {
    		     printLog("The parameter Log4WurflNoDeviceDetect must be defined into WURFLMobile.config");
@@ -273,6 +298,44 @@ sub loadConfigFile {
 			}
 		}
 		close IN;
+		#
+		# Start for web_patch_wurfl (full browser)
+		#
+		if ($loadwebpatch eq 'true') {
+			if ($patchwurflnetdownload eq "true") {
+				printLog("Start downloading patch WURFL.xml from $patchwurflurl");
+				my $content = get ($patchwurflurl);
+				printLog("Finish downloading  WURFL.xml");
+				if ($content eq "") {
+					printLog("Couldn't get patch $patchwurflurl.");
+					ModPerl::Util::exit();
+				}
+				my @rows = split(/\n/, $content);
+				my $row;
+				my $count=0;
+				foreach $row (@rows){
+					$r_id=parseWURFLFile($row,$r_id);
+				}
+	         } else {
+				$file2=$dirwebpatch;
+				if (-e "$file2") {
+						printLog("Start loading Web Patch File of WURFL");
+						if (open (IN,"$file2")) {
+							while (<IN>) {
+								 $r_id=parseWURFLFile($_,$r_id);
+								 
+							}
+							close IN;
+						} else {
+							printLog("Error open file:$file2");
+							ModPerl::Util::exit();
+						}
+				} else {
+				  printLog("File $file2 not found");
+				  ModPerl::Util::exit();
+				}
+			}
+		}
 		my $arrLen = scalar %Array_fb;
 		($arrLen,$dummy)= split(/\//, $arrLen);
 		if ($arrLen == 0) {
@@ -468,17 +531,7 @@ sub handler    {
       my $return_value;
 	  my $dummy;
 	  my $variabile2="";
-	  my $fullBrowser='false';
-	  foreach $dummy (keys %arrayFullBrowser) {
-		  	   if (index($user_agent,$dummy) != -1) {
-		  	      $fullBrowser='true';
-		  	   }
-	  }
-	  foreach $dummy (keys %arrayMobileBrowser) {
-		  	   if (index($user_agent,$dummy) != -1) {
-		  	      $fullBrowser='false';
-		  	   }
-	  }
+	  #my $ArrayCapFound{'is_transcoder'}='false';
 
       my ($controlCookie,%ArrayCapFound)=existCookie($cookie);
       $repasshanlder=$repasshanlder + 1;
@@ -487,7 +540,6 @@ sub handler    {
       } else {
          $content_type="-----";
       }
-      if ($fullBrowser eq 'false') {
 			  if ($controlCookie eq "") {       
 					if (index($user_agent,'UP.Link') >0 ) {
 						$user_agent=substr($user_agent,0,index($user_agent,'UP.Link'));
@@ -547,6 +599,10 @@ sub handler    {
 								if ($showdefaultvariable eq "false" && $capability2 eq 'max_image_width') {
 								   $visible=1;
 								}
+								if ($showdefaultvariable eq "false" && $capability2 eq 'is_transcoder') {
+								   $visible=1;
+								}
+								
 								if ($visible == 0) {
 									if ($count==0) {
 									   $count=1;
@@ -582,10 +638,6 @@ sub handler    {
 				 $variabile=$controlCookie;
 				 $f->r->log->debug("USING CACHE:$variabile");
 			  }
-      } else {
-      		$ArrayCapFound{'device_claims_web_support'}='true'; 
-			$ArrayCapFound{'is_wireless_device'}='false';
-      }
       	unless ($f->ctx) {
       	  if ($ImageType{$content_type}) { 
       	     $dummy="";
@@ -710,6 +762,9 @@ sub handler    {
 					 }
 				}
 				if ($convertonlyimages ne 'true') {
+                   if ($redirecttranscoder eq 'true' && $ArrayCapFound{'is_transcoder'} eq 'true') {
+                      $location=$redirecttranscoderurl;
+                   }
 				   if (substr($location,0,5) eq "http:") {
 				      $f->r->log->debug("Redirect: $location");
                       $f->r->headers_out->set(Location => $location);                      
