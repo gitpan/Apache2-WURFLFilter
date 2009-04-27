@@ -33,10 +33,11 @@ package Apache2::WURFLFilter;
   # 
 
   use vars qw($VERSION);
-  $VERSION= "1.60";
+  $VERSION= "1.61";
   my %Capability;
   my %Array_fb;
   my %Array_id;
+  my %Array_fullua_id;
   my %Array_DDRcapability;
 
   my %XHTMLUrl;
@@ -71,6 +72,7 @@ package Apache2::WURFLFilter;
   my $patchwurflurl="";
   my $redirecttranscoder="true";
   my $redirecttranscoderurl="";
+  my $detectaccuracy="false";
   
   $ImageType{'png'}="png";
   $ImageType{'gif'}="gif";
@@ -221,6 +223,10 @@ sub loadConfigFile {
 	      	 if ($ENV{RedirectTranscoderUrl}) {
 				$redirecttranscoderurl=$ENV{RedirectTranscoderUrl};
 				printLog("RedirectTranscoderUrl is: $redirecttranscoderurl");
+			 }	
+			 if ($ENV{DetectAccuracy}) {
+				$detectaccuracy=$ENV{DetectAccuracy};
+				printLog("DetectAccuracy is: $detectaccuracy");
 			 }	
 
 
@@ -381,6 +387,7 @@ sub parseWURFLFile {
 				         my $pair;
 				         my $arrUaLen = scalar %ParseUA;
 				         my $contaUA=0;
+				         my $Array_fullua_id=$ua;
 				         foreach $pair (reverse sort { $a <=> $b }  keys %ParseUA) {
 						 			my $dummy=$ParseUA{$pair};
 						            $Array_id{$dummy}=$id;
@@ -531,9 +538,11 @@ sub handler    {
       my $return_value;
 	  my $dummy;
 	  my $variabile2="";
-	  #my $ArrayCapFound{'is_transcoder'}='false';
-
-      my ($controlCookie,%ArrayCapFound)=existCookie($cookie);
+	  my %ArrayCapFound;
+	  my $controlCookie;
+	  $ArrayCapFound{is_transcoder}='false';
+	  
+      ($controlCookie,%ArrayCapFound)=existCookie($cookie);
       $repasshanlder=$repasshanlder + 1;
       if ($content_type) {
         $dummy="";
@@ -804,23 +813,24 @@ sub IdentifyUAMethod {
          }
       }
   }
-  if ($id_find eq "") {
+  if ($id_find eq "" && $detectaccuracy eq "true") {
     
-    foreach $pair (reverse sort { $a <=> $b }  keys %ArrayUAType) {
-		if ($ArrayUAType{$pair}) {
-			foreach $ua_toMatch (%Array_id) {
-				$dummy=$ArrayUAType{$pair};
+    #foreach $pair (reverse sort { $a <=> $b }  keys %ArrayUAType) {
+	#	if ($ArrayUAType{$pair}) {
+			foreach $ua_toMatch (%Array_fullua_id) {
+				$dummy=$UserAgent;
 				$near_toMatch=distance($dummy,$ua_toMatch);     
 				 if ($near_toMatch < $near_toFind) {
 					$near_toFind=$near_toMatch;
-					$id_find=$Array_id{$ua_toMatch};
+					$id_find=$Array_fullua_id{$ua_toMatch};
 				 }
+
 			}
-			if ($near_toFind > $precision) {
-				$id_find="";
-			}
-		}
-  	}
+				if ($near_toFind > $precision) {
+					$id_find="";
+				}
+		#}
+  	#}
   }
   return $id_find;
 }

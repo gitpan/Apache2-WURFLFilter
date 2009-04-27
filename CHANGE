@@ -1,4 +1,9 @@
-WURFL 1.60
+WURFLFilter 1.61
+Change algorithm to identify the UserAgent
+Added Parameter DetectAccuracy to set the accuracy of device detection (default is false)
+
+
+WURFLFilter 1.60
 Added parameter for sttieng "Apache Mobile Filter" into httpd.conf
 Added Parameter LoadWebPatch to set if you want to load a patch file (default is false)
 Added Parameter DirWebPatch to set where you set your patch file

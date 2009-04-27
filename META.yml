@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               Apache2-WURFLFilter
-version:            1.60
+version:            1.61
 abstract:           ~
 author:
     - Idel Fuschini (idel@idelfuschini.it)
