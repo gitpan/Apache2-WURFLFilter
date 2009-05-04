@@ -1,3 +1,7 @@
+WURFLFilter 1.70
+In this version you can specify on the query string of the URI of an image the 	
+the percentage of width of the  device that the filter must resize 
+
 WURFLFilter 1.61
 Change algorithm to identify the UserAgent
 Added Parameter DetectAccuracy to set the accuracy of device detection (default is false)

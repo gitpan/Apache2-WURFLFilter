@@ -33,7 +33,7 @@ package Apache2::WURFLFilter;
   # 
 
   use vars qw($VERSION);
-  $VERSION= "1.61";
+  $VERSION= "1.70";
   my %Capability;
   my %Array_fb;
   my %Array_id;
@@ -524,6 +524,7 @@ sub handler    {
       my $s = $f->r->server;
       my $variabile="";
       my  $user_agent=$f->r->headers_in->{'User-Agent'};
+      my $query_string=$f->r->args;
       my $uri = $f->r->uri();
       my ($content_type) = $uri =~ /\.(\w+)$/;
       my @fileArray = split(/\//, $uri);
@@ -540,10 +541,13 @@ sub handler    {
 	  my $variabile2="";
 	  my %ArrayCapFound;
 	  my $controlCookie;
+	  my $query_img="";
 	  $ArrayCapFound{is_transcoder}='false';
 	  
       ($controlCookie,%ArrayCapFound)=existCookie($cookie);
       $repasshanlder=$repasshanlder + 1;
+      
+      
       if ($content_type) {
         $dummy="";
       } else {
@@ -668,6 +672,13 @@ sub handler    {
 	          my $imagefile="";
 	          if ($convertimage eq "true" && $variabile ne "device=false") {
 				  my $width=$ArrayCapFound{'max_image_width'};
+				  $s->warn("---> before - $width <--");
+				  if ($query_string) {
+				       if ( $query_string =~ /^-?\d/) {
+				       		$width=$query_string * $width / 100;
+				       }
+				  }  
+				  $s->warn("---> after - $width <--");
 				  $imagefile="$resizeimagedirectory/$width.$file";
 				  #
 				  # control if image exist
@@ -684,7 +695,7 @@ sub handler    {
 						$dummy="";
 					  } else { 
 						  my $image = Image::Resize->new("$imageToConvert");
-						  my $gd = $image->resize($ArrayCapFound{'max_image_width'}, 250);
+						  my $gd = $image->resize($width, 250);
 						  if (open(FH, ">$docroot$imagefile")) {
 							if ($content_type eq "gif") {
 								print FH $gd->gif();
