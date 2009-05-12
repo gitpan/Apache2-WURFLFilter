@@ -1,3 +1,20 @@
+WURFLFilter 2.00
+In this version we have separated the module in two parts:
+WURFLFilter.pm that give the information of device capabilities as Apache Environments
+ImageRenderFilter.pm manage the images for the devices
+
+The Apache Mobile Filter pass the parameter with this syntax:
+
+AMF_<upper case wurfl capability names>
+
+for example:
+
+j2me_midp_2_0 is AMF_J2ME_MIDP_2_0
+
+
+if Parameter CapabilityList is setted with value all show all capabilies of wurfl.
+Fixed some BUG
+
 WURFLFilter 1.70
 In this version you can specify on the query string of the URI of an image the 	
 the percentage of width of the  device that the filter must resize 

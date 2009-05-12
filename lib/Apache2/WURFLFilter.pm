@@ -3,9 +3,9 @@
 
 #
 # Created by Idel Fuschini 
-# Date: 21/11/08
+# Date: 20/05/09
 # Site: http://www.idelfuschini.it
-# Mail: ifuschini@cpan.org
+# Mail: idel.fuschini@gmail.com
 
 
 package Apache2::WURFLFilter; 
@@ -13,16 +13,14 @@ package Apache2::WURFLFilter;
   use strict; 
   use warnings; 
   
-  use Apache2::Filter (); 
   use Apache2::RequestRec ();
   use Apache2::RequestUtil ();
   use Apache2::SubRequest ();
   use Apache2::Log;
-  use CGI::Cookie ();
+  use Apache2::Filter (); 
   use Text::LevenshteinXS qw(distance);
   use APR::Table (); 
   use LWP::Simple;
-  use Image::Resize;
   use Apache2::Const -compile => qw(OK REDIRECT DECLINED);
   use IO::Uncompress::Unzip qw(unzip $UnzipError) ;
   use File::Copy;
@@ -33,7 +31,7 @@ package Apache2::WURFLFilter;
   # 
 
   use vars qw($VERSION);
-  $VERSION= "1.70";
+  $VERSION= "2.00";
   my %Capability;
   my %Array_fb;
   my %Array_id;
@@ -43,16 +41,14 @@ package Apache2::WURFLFilter;
   my %XHTMLUrl;
   my %WMLUrl;
   my %CHTMLUrl;
-  my %ImageType;
   my %cacheArray;
   my %cacheArray2;
   my %cacheArray_toview;
+  my %ImageType;
   
 
-  my $intelliswitch="false";
-  my $mobileversionurl;
-  my $fullbrowserurl;
-  my $cookieset="true";
+  my $mobileversionurl="none";
+  my $fullbrowserurl="none";
   my $querystring="false";
   my $showdefaultvariable="false";
   my $wurflnetdownload="false";
@@ -60,8 +56,6 @@ package Apache2::WURFLFilter;
   my $convertimage="false";
   my $resizeimagedirectory="";
   my $downloadzipfile="true";
-  my $virtualdirectoryimages="false";
-  my $virtualdirectory="";
   my $convertonlyimages="false"; 
   my $repasshanlder=0;
   my $globalpassvariable="";
@@ -71,20 +65,23 @@ package Apache2::WURFLFilter;
   my $patchwurflnetdownload="false"; 
   my $patchwurflurl="";
   my $redirecttranscoder="true";
-  my $redirecttranscoderurl="";
+  my $redirecttranscoderurl="none";
   my $detectaccuracy="false";
-  
+  my $listall="false";
   $ImageType{'png'}="png";
   $ImageType{'gif'}="gif";
   $ImageType{'jpg'}="jpg";
   $ImageType{'jpeg'}="jpeg";
+
   $Capability{'resolution_width'}="resolution_width";  
   $Capability{'max_image_width'}="max_image_width";
+  $Capability{'max_image_height'}="max_image_width";  
   $Capability{'is_wireless_device'}="is_wireless_device";
   $Capability{'device_claims_web_support'}="device_claims_web_support";
   $Capability{'xhtml_support_level'}="xhtml_support_level";
   $Capability{'html_wi_imode_ compact_generic'}="html_wi_imode_ compact_generic";
   $Capability{'is_transcoder'}="is_transcoder";
+  
   #
   # Check if MOBILE_HOME is setting in apache httpd.conf file for example:
   # PerlSetEnv MOBILE_HOME <apache_directory>/MobileFilter
@@ -113,26 +110,10 @@ sub loadConfigFile {
 				$mobileversionurl=$ENV{MobileVersionUrl};
 				printLog("MobileVersionUrl is: $mobileversionurl");
 			 }	
-	      	 if ($ENV{IntelliSwitch}) {
-				$intelliswitch=$ENV{IntelliSwitch};
-				printLog("IntelliSwitch is: $intelliswitch");
-			 }	
 	      	 if ($ENV{FullBrowserUrl}) {
 				$fullbrowserurl=$ENV{FullBrowserUrl};
 				printLog("FullBrowserUrl is: $fullbrowserurl");
-			 }	
-	      	 if ($ENV{CookieSet}) {
-				$cookieset=$ENV{CookieSet};
-				printLog("CookieSet is: $cookieset");
-			 }	
-	      	 if ($ENV{PassQueryStringSet}) {
-				$querystring=$ENV{PassQueryStringSet};
-				printLog("PassQueryStringSet is: $querystring");
-			 }	
-	      	 if ($ENV{ShowDefaultVariable}) {
-				$showdefaultvariable=$ENV{ShowDefaultVariable};
-				printLog("ShowDefaultVariable is: $showdefaultvariable");
-			 }	
+			 }		
 	      	 if ($ENV{WurflNetDownload}) {
 				$wurflnetdownload=$ENV{WurflNetDownload};
 				printLog("WurflNetDownload is: $wurflnetdownload");
@@ -145,26 +126,6 @@ sub loadConfigFile {
 				$downloadzipfile=$ENV{DownloadZipFile};
 				printLog("DownloadZipFile is: $downloadzipfile");
 			 }	
-	      	 if ($ENV{ConvertImage}) {
-				$convertimage=$ENV{ConvertImage};
-				printLog("ConvertImage is: $convertimage");
-			 }	
-	      	 if ($ENV{ResizeImageDirectory}) {
-				$resizeimagedirectory=$ENV{ResizeImageDirectory};
-				printLog("ResizeImageDirectory is: $resizeimagedirectory");
-			 }	
-	      	 if ($ENV{WebAppConvertImages}) {
-				$virtualdirectoryimages=$ENV{WebAppConvertImages};
-				printLog("WebAppConvertImages is: $virtualdirectoryimages");
-			 }	
-	      	 if ($ENV{WebAppDirectory}) {
-				$virtualdirectory=$ENV{WebAppDirectory};
-				printLog("WebAppDirectory is: $virtualdirectory");
-			 }	
-	      	 if ($ENV{ConvertOnlyImages}) {
-				$convertonlyimages=$ENV{ConvertOnlyImages};
-				printLog("ConvertOnlyImages is: $convertonlyimages");
-			 }	
 	      	 if ($ENV{Log4WurflNoDeviceDetect}) {
 				$log4wurfl=$ENV{Log4WurflNoDeviceDetect};
 				printLog("Log4WurflNoDeviceDetect is: $log4wurfl");
@@ -172,34 +133,14 @@ sub loadConfigFile {
 	      	 if ($ENV{CapabilityList}) {
 				my @dummycapability = split(/,/, $ENV{CapabilityList});
 				foreach $dummy (@dummycapability) {
+				      if ($dummy eq "all") {
+				         $listall="true";
+				      }
 				      $Capability{$dummy}=$dummy;
 				      printLog("Capability is: $dummy");
 				}
 			 }	
-	      	 if ($ENV{XHTMLUrl}) {
-				my @dummyxurl = split(/,/, $ENV{XHTMLUrl});
-				foreach $dummy (@dummyxurl) {
-				      ($val, $capability)=split(/\|/, $dummy);
-				      $XHTMLUrl{$val}=$capability;
-				      printLog("XHTMLUrl is: width=$val and URL=$capability");
-				}
-			 }	
-	      	 if ($ENV{CHTMLUrl}) {
-				my @dummycurl = split(/,/, $ENV{CHTMLUrl});
-				foreach $dummy (@dummycurl) {
-				      ($val, $capability)=split(/\|/, $dummy);
-				      $CHTMLUrl{$val}=$capability;
-				      printLog("CHTMLUrl is: width=$val and URL=$capability");
-				}
-			 }	
-	      	 if ($ENV{WMLUrl}) {
-				my @dummywurl = split(/,/, $ENV{WMLUrl});
-				foreach $dummy (@dummywurl) {
-				      ($val, $capability)=split(/\|/, $dummy);
-				      $WMLUrl{$val}=$capability;
-				      printLog("WMLUrl is: width=$val and URL=$capability");
-				}
-			 }	             
+	             
 	      	 if ($ENV{LoadWebPatch}) {
 				$loadwebpatch=$ENV{LoadWebPatch};
 				printLog("LoadWebPatch is: $loadwebpatch");
@@ -368,16 +309,12 @@ sub parseWURFLFile {
 	      if ($record =~ /\<device/o) {
 	        if (index($record,'user_agent') > 0 ) {
 	           $ua=substr($record,index($record,'user_agent') + 12,index($record,'"',index($record,'user_agent')+ 13)- index($record,'user_agent') - 12);
-	           #print "$ua\n";
-	           
 	        }	        
 	        if (index($record,'id') > 0 ) {
 	           $id=substr($record,index($record,'id') + 4,index($record,'"',index($record,'id')+ 5)- index($record,'id') - 4);	           
-	           #print "$id\n";
 	        }	        
 	        if (index($record,'fall_back') > 0 ) {
 	           $fb=substr($record,index($record,'fall_back') + 11,index($record,'"',index($record,'fall_back')+ 12)- index($record,'fall_back') - 11);	           
-	           #print "$fb\n";
 	        }
 	        if (($fb) && ($id)) {	     	   
 					$Array_fb{"$id"}=$fb;
@@ -397,7 +334,10 @@ sub parseWURFLFile {
 		 }
 		 if ($record =~ /\<capability/o) { 
 			($null,$name,$null2,$value,$null3,$fb)=split(/\"/, $record);
-			if (($id) && ($Capability{$name}) && ($name) && ($value)) {
+			if ($listall eq "true") {
+				$Capability{$name}=$name;
+			}
+			if (($id) && ($Capability{$name}) && ($name) && ($value)) {			   
 			   $Array_DDRcapability{"$val|$name"}=$value;
 			}
 		 }
@@ -435,7 +375,7 @@ sub Data {
 	$_min=&correct_number($_min);
 	$_sec=&correct_number($_sec);
 	$_data="$_mday/$_mon/$_year - $_hour:$_min:$_sec";
-        return $_data;
+    return $_data;
 }
 sub correct_number {
   my ($number) = @_;
@@ -452,15 +392,16 @@ sub printLog {
 sub printNotFound {
 	my ($info) = @_;
 	my $data=Data();
+	my $message="nok";
 	if ($info ne $globalpassvariable) {
 		 if (open(LOGFILE, ">>$log4wurfl")){
 		     print LOGFILE "$data - $info\n";
 		  close LOGFILE;
-		} else {
-		  ModPerl::Util::exit();
-		}
+		  $message="ok";
+		 } 
     }
     $globalpassvariable=$info;
+    return $message;
 
 }
 
@@ -491,316 +432,163 @@ sub FallBack {
    		
 }
    return %ArrayCapFoundToPass;
+}
 
-}
-sub existCookie {
-    my %ArrayCapFoundToPass;
-    my ($cookie_search) = @_;
-    my $param_tofound;
-    my $string_tofound;
-    my $dummy;
-    my $response="";
-    my @pairs = split(/;/, $cookie_search);
-    my $name;
-    my $value;
-    foreach $param_tofound (@pairs) {
-       ($string_tofound,$dummy)=split(/=/, $param_tofound);
-       $ArrayCapFoundToPass{$string_tofound}=$dummy;
-       if ($string_tofound eq "wurfl") {
-         $response=$param_tofound;
-            my @pairs=split(/\&/, substr($param_tofound,length('wurfl=')));
-            my $redifine;
-            foreach $redifine (@pairs) {
-                ($name,$value)=split(/=/, $redifine);
-                $ArrayCapFoundToPass{$name}=$value;
-            }
-       }
-    }   
-    return ($response,%ArrayCapFoundToPass);
-}
-sub handler    {
+sub handler {
       my $f = shift;
       my $capability2;
-      my $s = $f->r->server;
       my $variabile="";
-      my  $user_agent=$f->r->headers_in->{'User-Agent'};
-      my $query_string=$f->r->args;
-      my $uri = $f->r->uri();
+      my  $user_agent=$f->headers_in->{'User-Agent'}|| '';
+      my $query_string=$f->args;
+      my $uri = $f->uri();
       my ($content_type) = $uri =~ /\.(\w+)$/;
       my @fileArray = split(/\//, $uri);
       my $file=$fileArray[-1];
-      my $docroot = $f->r->document_root();
+      my $docroot = $f->document_root();
       my $id="";
       my $method="";
-      my $cookie = $f->r->headers_in->{Cookie} || '';       
-      my $location;
+      my $location="none";
       my $width_toSearch;
       my $type_redirect="internal";
       my $return_value;
-	  my $dummy;
+	  my $dummy="";
 	  my $variabile2="";
 	  my %ArrayCapFound;
 	  my $controlCookie;
 	  my $query_img="";
 	  $ArrayCapFound{is_transcoder}='false';
-	  
-      ($controlCookie,%ArrayCapFound)=existCookie($cookie);
-      $repasshanlder=$repasshanlder + 1;
-      
-      
-      if ($content_type) {
-        $dummy="";
-      } else {
-         $content_type="-----";
-      }
-			  if ($controlCookie eq "") {       
-					if (index($user_agent,'UP.Link') >0 ) {
-						$user_agent=substr($user_agent,0,index($user_agent,'UP.Link'));
-					}
-							if ($cacheArray2{$user_agent}) {
-								#
-								# I'm here only for old device
-								#
-							   my @pairs = split(/&/, $cacheArray2{$user_agent});
-							   my $param_tofound;
-							   my $string_tofound;
-							   foreach $param_tofound (@pairs) {      	       
-									 ($string_tofound,$dummy)=split(/=/, $param_tofound);
-									 $ArrayCapFound{$string_tofound}=$dummy;
-									 
-							   }
-							   $variabile=$cacheArray_toview{$user_agent};
-							} else {
-								#
-								# I'm here only for new device
-								#
-							if ($cacheArray{$user_agent}) {
-							  $id=$cacheArray{$user_agent};
-							} else {
-								if ($user_agent) {
-									$id=IdentifyUAMethod($user_agent,2);
-									$method="IdentifyUAMethod($id),$user_agent";
-								}
-								$cacheArray{$user_agent}=$id;
-							}
-				if ($id ne "") {
-		
-						
-						%ArrayCapFound=FallBack($id);         
-						if ($ImageType{$content_type}) {
-							  $dummy="";
-						} else {
-							my $count=0;
-							my $count2=0;
-							foreach $capability2 (sort keys %ArrayCapFound) {
-								my $visible=0;
-								if ($count2==0) {
-									$variabile2="$capability2=$ArrayCapFound{$capability2}";
-									$count2=1;
-								} else {
-									$variabile2="$variabile2&$capability2=$ArrayCapFound{$capability2}";
-								} 						
-								if ($showdefaultvariable eq "false" && $capability2 eq 'xhtml_support_level') {
-								   $visible=1;      	           
-								}
-								if ($showdefaultvariable eq "false" && $capability2 eq 'is_wireless_device') {
-								   $visible=1;      	           
-								}
-								if ($showdefaultvariable eq "false" && $capability2 eq 'device_claims_web_support') {
-								   $visible=1;
-								}
-								if ($showdefaultvariable eq "false" && $capability2 eq 'max_image_width') {
-								   $visible=1;
-								}
-								if ($showdefaultvariable eq "false" && $capability2 eq 'is_transcoder') {
-								   $visible=1;
-								}
-								
-								if ($visible == 0) {
-									if ($count==0) {
-									   $count=1;
-										$variabile="$capability2=$ArrayCapFound{$capability2}";
-									} else {
-										$variabile="$variabile&$capability2=$ArrayCapFound{$capability2}";
-									}
-								}
-							 }
-		
-							
-							$cacheArray2{$user_agent}=$variabile2;
-							$cacheArray_toview{$user_agent}=$variabile;
-					   }
-				} else {
-						$variabile="device=false";            
-						printNotFound("$user_agent");
-						$s->warn("Device not found:$user_agent");
-					$ArrayCapFound{'device_claims_web_support'}= 'true';
-					$ArrayCapFound{'is_wireless_device'}='false';
-					$cacheArray2{$user_agent}="$variabile&device_claims_web_support=true&is_wireless_device=false";
-					$cacheArray_toview{$user_agent}=$variabile;
-					$cacheArray{$user_agent}="device_not_found";
-					$method="";
-				}
-				}
-				if ($method) {
-					$f->r->log->debug("New id found - $method -->$variabile");
-					$s->warn("New id found - $method -->$variabile");
-				} 
-			  } else {
-				 $ArrayCapFound{'device_claims_web_support'}='false';				 
-				 $variabile=$controlCookie;
-				 $f->r->log->debug("USING CACHE:$variabile");
-			  }
-      	unless ($f->ctx) {
-      	  if ($ImageType{$content_type}) { 
-      	     $dummy="";
-      	  } else {
-			   if ($ArrayCapFound{'device_claims_web_support'} eq 'false') {
-				   if ($controlCookie eq "" && $cookieset eq "true" ) {
-					   $f->r->log->debug("Cookie: $variabile");
-					   $f->r->err_headers_out->set ('Set-Cookie' => "wurfl=$variabile");
-				   }
-				   $f->ctx(1);
-			   }
-       	   }
-          
-      	}
-
-
+      my %ArrayQuery;
+      my $var;
 	  if ($ImageType{$content_type}) {
-	          my $imageToConvert;
-	          my $imagefile="";
-	          if ($convertimage eq "true" && $variabile ne "device=false") {
-				  my $width=$ArrayCapFound{'max_image_width'};
-				  $s->warn("---> before - $width <--");
-				  if ($query_string) {
-				       if ( $query_string =~ /^-?\d/) {
-				       		$width=$query_string * $width / 100;
-				       }
-				  }  
-				  $s->warn("---> after - $width <--");
-				  $imagefile="$resizeimagedirectory/$width.$file";
-				  #
-				  # control if image exist
-				  #
-				 
-				  if ($virtualdirectoryimages eq 'true') {
-				     $imageToConvert="$virtualdirectory$uri";
-				  } else {
-				     $imageToConvert="$docroot$uri";
-				  }
-				  $return_value=Apache2::Const::DECLINED;
-				  if ( -e "$imageToConvert") {
-					  if ( -e "$docroot$imagefile") {
-						$dummy="";
-					  } else { 
-						  my $image = Image::Resize->new("$imageToConvert");
-						  my $gd = $image->resize($width, 250);
-						  if (open(FH, ">$docroot$imagefile")) {
-							if ($content_type eq "gif") {
-								print FH $gd->gif();
-							}
-							if ($content_type eq "jpg") {
-								print FH $gd->jpeg();
-							}
-							if ($content_type eq "png") {
-								print FH $gd->png();
-							}
-						  close(FH);
-						  } else {
-					         $s->err("Can not create $docroot$imagefile");
-					      }
-					  }
-					  $f->r->internal_redirect($imagefile);
-					  $return_value=Apache2::Const::DECLINED;	  	
-				  }
-              } else {
-                 if ( -e "$resizeimagedirectory/$file") {
-						$dummy="";
-				  } else {
-						  if ($virtualdirectoryimages eq 'true') {
-							 $imageToConvert="$virtualdirectory$uri";
-						  } else {
-							 $imageToConvert="$docroot$uri";
-						  }			  
-                  		copy($imageToConvert, "$docroot$resizeimagedirectory");
-                  }
-				  
-                  $f->r->internal_redirect("$resizeimagedirectory/$file");
-                  $return_value=Apache2::Const::OK;	
-              }
-			  
+		 $f->subprocess_env("VER" => $VERSION);
+		 $return_value=Apache2::Const::DECLINED;
 	  } else {
-				#
-				# verify if the device is fullbrowser 
-				#
-				my $add_parameter="";
-				$return_value=Apache2::Const::DECLINED;
-				if ($querystring eq "true") {
-					$add_parameter="\?$variabile";
-				}
-				if ($ArrayCapFound{'device_claims_web_support'} eq 'true' && $ArrayCapFound{'is_wireless_device'} eq 'false') {
-					$location=$fullbrowserurl;      		
-				} else {
-					 if ($intelliswitch eq "false") {
-						 $location="$mobileversionurl$add_parameter";
-						 my $key="wurfl";
-						 my $val="$variabile";
-						 $f->r->subprocess_env->set($key => $val);
 
-					 } else {
-						 if ($variabile ne "device=false") {
-								 if ($ArrayCapFound{'xhtml_support_level'} ne "-1") {
-									  foreach $width_toSearch (sort keys %XHTMLUrl) {
-										 if ($width_toSearch <= $ArrayCapFound{'resolution_width'}) {
-											 $location=$XHTMLUrl{$width_toSearch};
-											 $location="$location/$add_parameter";
-										 }
-									  }
-								 } else {
-									  foreach $width_toSearch (sort keys %WMLUrl) {
-										 if ($width_toSearch <= $ArrayCapFound{'resolution_width'}) {
-											 $location=$WMLUrl{$width_toSearch};
-											 $location="$location/$add_parameter";
-										 }
-									  }
+		  if ($query_string) {
+			  my @vars = split(/&/, $query_string); 	  
+			  foreach $var (sort @vars){
+					   if ($var) {
+							my ($v,$i) = split(/=/, $var);
+							$v =~ tr/+/ /;
+							$v =~ s/%([a-fA-F0-9][a-fA-F0-9])/pack("C", hex($1))/eg;
+							$i =~ tr/+/ /;
+							$i =~ s/%([a-fA-F0-9][a-fA-F0-9])/pack("C", hex($1))/eg;
+							$i =~ s/<!--(.|\n)*-->//g;
+							$ArrayQuery{$v}=$i;
+						}
+			  }
+		  }
+		  if ($ArrayQuery{amf}) {
+					$user_agent=$ArrayQuery{amf};
+		  }
+		  
+	
+	
+						if (index($user_agent,'UP.Link') >0 ) {
+							$user_agent=substr($user_agent,0,index($user_agent,'UP.Link'));
+						}
+								if ($cacheArray2{$user_agent}) {
+									#
+									# I'm here only for old device
+									#
+								   my @pairs = split(/&/, $cacheArray2{$user_agent});
+								   
+								   
+								   my $param_tofound;
+								   my $string_tofound;
+								   foreach $param_tofound (@pairs) {      	       
+										 ($string_tofound,$dummy)=split(/=/, $param_tofound);
+										 $ArrayCapFound{$string_tofound}=$dummy;
+										 
+										 my $upper2=uc($string_tofound);
+										 $f->subprocess_env("AMF_$upper2" => $ArrayCapFound{$string_tofound});
+								   }
+								   $id=$ArrayCapFound{id};
+								   
+								} else {
+									#
+									# I'm here only for new device
+									#
+								if ($cacheArray{$user_agent}) {
+								  $id=$cacheArray{$user_agent};
+								} else {
+									if ($user_agent) {
+										$id=IdentifyUAMethod($user_agent,2);
+										$method="IdentifyUAMethod($id),$user_agent";
+									}
+									$cacheArray{$user_agent}=$id;
+								}
+					if ($id ne "") {								
+								%ArrayCapFound=FallBack($id);         
+								my $count=0;
+								my $count2=0;
+								foreach $capability2 (sort keys %ArrayCapFound) {
+									my $visible=0;
+									if ($count2==0) {
+										$variabile2="$capability2=$ArrayCapFound{$capability2}";
+										$count2=1;
+									} else {
+										$variabile2="$variabile2&$capability2=$ArrayCapFound{$capability2}";
+									} 						
+									my $upper=uc($capability2);
+									$f->subprocess_env("AMF_$upper" => $ArrayCapFound{$capability2});
 								 }
-								 if ($ArrayCapFound{'html_wi_imode_ compact_generic'} eq "true") {
-									  foreach $width_toSearch (sort keys %CHTMLUrl) {
-										 if ($width_toSearch <= $ArrayCapFound{'resolution_width'}) {
-											 $location=$CHTMLUrl{$width_toSearch};
-											 $location="$location/$add_parameter";
-										 }
-									  }
-								 }
-						 } else {
-							 $location=$fullbrowserurl;
-							 $type_redirect="ext";
-							 $s->warn("Strange UA:$user_agent");
-							 
-						 }
-					 }
-				}
-				if ($convertonlyimages ne 'true') {
-                   if ($redirecttranscoder eq 'true' && $ArrayCapFound{'is_transcoder'} eq 'true') {
-                      $location=$redirecttranscoderurl;
-                   }
-				   if (substr($location,0,5) eq "http:") {
-				      $f->r->log->debug("Redirect: $location");
-                      $f->r->headers_out->set(Location => $location);                      
-                      $f->r->status(Apache2::Const::REDIRECT);
-                   } else {
-                      $f->r->log->debug("InternalRedirect: $location");
-                   	  $f->r->internal_redirect($location);
-                   }
-                }
-                
-	  }
+								 $variabile2="id=$id&$variabile2";
+								$f->subprocess_env("AMF_ID" => $id);
+								$cacheArray2{$user_agent}=$variabile2;
+					} else {
+							$variabile="device=false";            
+							if (printNotFound("$user_agent") eq "nok") {
+							   $f->log->warn("Can't open:$log4wurfl");
+							}
+							$f->log->warn("Device not found:$user_agent");
+						$ArrayCapFound{'device_claims_web_support'}= 'true';
+						$ArrayCapFound{'is_wireless_device'}='false';
+						$cacheArray2{$user_agent}="$variabile&device_claims_web_support=true&is_wireless_device=false";
+						$cacheArray{$user_agent}="device_not_found";
+						$method="";
+					}
+					}
+					if ($method) {
+						$f->log->debug("New id found - $method -->$variabile");
+						$f->log->warn("New id found - $method");
+					}
+	
+					
+		#
+		# Start redirect for mobile site
+		#
+		if ($fullbrowserurl ne 'none' && $ArrayCapFound{'device_claims_web_support'} eq 'true' && $ArrayCapFound{'is_wireless_device'} eq 'false') {
+						$location=$fullbrowserurl;      		
+		} else {
+		   if ($mobileversionurl && 'none') {
+						$location=$mobileversionurl;
+		   }
+		}
+		if ($ArrayCapFound{'is_transcoder'}) {
+							if ($redirecttranscoderurl ne 'none' && $redirecttranscoder eq 'true' && $ArrayCapFound{'is_transcoder'} eq 'true') {
+								$location=$redirecttranscoderurl;
+							}
+		}
+		if ($location ne "none") {
+						   if (substr($location,0,5) eq "http:") {
+						  $f->log->debug("Redirect: $location");
+						  $f->headers_out->set(Location => $location);
+						  $f->status(Apache2::Const::REDIRECT); 
+						  $return_value=Apache2::Const::REDIRECT;
+					   } else {
+						  $f->log->debug("InternalRedirect: $location");
+						  $f->internal_redirect($location);
+					   }
+		} else {
+		 $f->subprocess_env("VER" => $VERSION);
+		 $return_value=Apache2::Const::DECLINED;
+		}
+	}
+    return $return_value;
 
-	  
-      return $return_value;
-      
-} 
+}
+
 sub IdentifyUAMethod {
   my ($UserAgent,$precision) = @_;
   my $ind=0;
@@ -824,10 +612,7 @@ sub IdentifyUAMethod {
          }
       }
   }
-  if ($id_find eq "" && $detectaccuracy eq "true") {
-    
-    #foreach $pair (reverse sort { $a <=> $b }  keys %ArrayUAType) {
-	#	if ($ArrayUAType{$pair}) {
+  if ($id_find eq "" && $detectaccuracy eq "true") {    
 			foreach $ua_toMatch (%Array_fullua_id) {
 				$dummy=$UserAgent;
 				$near_toMatch=distance($dummy,$ua_toMatch);     
@@ -835,13 +620,10 @@ sub IdentifyUAMethod {
 					$near_toFind=$near_toMatch;
 					$id_find=$Array_fullua_id{$ua_toMatch};
 				 }
-
 			}
-				if ($near_toFind > $precision) {
+			if ($near_toFind > $precision) {
 					$id_find="";
-				}
-		#}
-  	#}
+			}
   }
   return $id_find;
 }
@@ -851,8 +633,7 @@ sub GetMultipleUa {
   my $pair;
   my $ind=0;
   my $pairs3;
-  my %ArrayUAparse;
-  
+  my %ArrayUAparse;  
   my @pairs = split(/\ /, $UserAgent);
   foreach $pair (@pairs)
   { 
@@ -898,7 +679,7 @@ sub GetMultipleUa {
   1; 
 =head1 NAME
 
-Apache2::WURFLFilter - is a Apache Mobile Filter that manage content (text & image) to the correct mobile device
+Apache2::WURFLFilter - is a Apache Mobile Filter that give any information about the capabilities of the devices as environment variable
 
 
 =head1 COREQUISITES
@@ -909,9 +690,7 @@ Text::LevenshteinXS
 
 =head1 DESCRIPTION
 
-This module The idea is to give to anybody the possibility to create mobile solution, it's not important if you know programming language just what you need to know is a little bit of html and if it's necessary wml.
-So I thought it was  to make something simply that can identify a browser and redirect it the correct url (for mobile or pc).
-Another feature I have implemented is the resize on the fly of the images, so if the wap/web developer want to adapted the images for the mobile device now it's possible. 
+This module is the final solution to manage WURFL information. WURFLFIlter identify the device and give you the value of all capabilities that stored into WURFL.xml
 
 For more details: http://www.idelfuschini.it/en/apache-mobile-filter.html
 
