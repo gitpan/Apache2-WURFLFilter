@@ -31,7 +31,7 @@ package Apache2::WURFLFilter;
   # 
 
   use vars qw($VERSION);
-  $VERSION= "2.00";
+  $VERSION= "2.01";
   my %Capability;
   my %Array_fb;
   my %Array_id;
@@ -460,7 +460,7 @@ sub handler {
       my %ArrayQuery;
       my $var;
 	  if ($ImageType{$content_type}) {
-		 $f->subprocess_env("VER" => $VERSION);
+		 $f->subprocess_env("AMF_VER" => $VERSION);
 		 $return_value=Apache2::Const::DECLINED;
 	  } else {
 
@@ -504,6 +504,7 @@ sub handler {
 										 $f->subprocess_env("AMF_$upper2" => $ArrayCapFound{$string_tofound});
 								   }
 								   $id=$ArrayCapFound{id};
+								$f->err_headers_out->set('Set-Cookie' => "amf=$ArrayCapFound{max_image_width}|$ArrayCapFound{max_image_height}; path=/;");
 								   
 								} else {
 									#
@@ -534,6 +535,9 @@ sub handler {
 									$f->subprocess_env("AMF_$upper" => $ArrayCapFound{$capability2});
 								 }
 								 $variabile2="id=$id&$variabile2";
+								 $f->log->warn("cookie=amf=$ArrayCapFound{max_image_width}|$ArrayCapFound{max_image_height}");
+								$f->err_headers_out->set('Set-Cookie' => "amf=$ArrayCapFound{max_image_width}|$ArrayCapFound{max_image_height}; path=/;");
+
 								$f->subprocess_env("AMF_ID" => $id);
 								$cacheArray2{$user_agent}=$variabile2;
 					} else {
@@ -581,7 +585,7 @@ sub handler {
 						  $f->internal_redirect($location);
 					   }
 		} else {
-		 $f->subprocess_env("VER" => $VERSION);
+		 $f->subprocess_env("AMF_VER" => $VERSION);
 		 $return_value=Apache2::Const::DECLINED;
 		}
 	}
@@ -692,7 +696,7 @@ Text::LevenshteinXS
 
 This module is the final solution to manage WURFL information. WURFLFIlter identify the device and give you the value of all capabilities that stored into WURFL.xml
 
-For more details: http://www.idelfuschini.it/en/apache-mobile-filter.html
+For more details: http://www.idelfuschini.it/it/apache-mobile-filter-v2x.html
 
 NOTE: this software need wurfl.xml you can download it directly from this site: http://wurfl.sourceforge.net or you canset the filter to download it directly.
 

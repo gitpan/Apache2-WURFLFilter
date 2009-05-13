@@ -4,7 +4,8 @@ use ExtUtils::MakeMaker;
   print << 'EOT1';
   
 Mobile Apache Filter (idel@idelfuschini.it)
-Documentation: http://www.idelfuschini.it/en/apache-mobile-filter.html
+Documentation: http://www.idelfuschini.it/it/apache-mobile-filter-v2x.html
+ 
 EOT1
 WriteMakefile(
     NAME		=> 'Apache2::WURFLFilter',

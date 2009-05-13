@@ -26,13 +26,15 @@ package Apache2::ImageRenderFilter;
   use IO::Uncompress::Unzip qw(unzip $UnzipError) ;
   use File::Copy;
   use constant BUFF_LEN => 1024;
+  use CGI::Cookie ();
+
 
   #
   # Define the global environment
   # 
 
   use vars qw($VERSION);
-  $VERSION= "2.00";
+  $VERSION= "2.01";
   my %Capability;
   my %Array_fb;
   my %Array_id;
@@ -157,6 +159,24 @@ sub loadConfigFile {
 	      
 	    printLog("Finish loading  parameter");
 }
+sub readCookie {
+    my ($cookie_search) = @_;
+    my $param_tofound;
+    my $string_tofound;
+    my $value;
+    my $width="0";
+    my $height="0";
+    my @pairs = split(/;/, $cookie_search);
+    my $name;
+    my $value;
+    foreach $param_tofound (@pairs) {
+       ($string_tofound,$value)=split(/=/, $param_tofound);
+       if ($string_tofound eq "amf") {
+         ($width,$height)=split(/\|/, $value);;
+       }
+    }   
+    return ($width,$height);
+}
 
 
 sub handler    {
@@ -164,7 +184,6 @@ sub handler    {
       my $capability2;
       my $s = $f->r->server;
       my $variabile="";
-      my  $user_agent=$f->r->headers_in->{'User-Agent'};
       my $query_string=$f->r->args;
       my $uri = $f->r->uri();
       my ($content_type) = $uri =~ /\.(\w+)$/;
@@ -184,6 +203,8 @@ sub handler    {
 	  my $query_img="";
       my %ArrayQuery;
       my $var;
+      my $cookie = $f->r->headers_in->{Cookie} || '';
+      my ($width,$height)=readCookie($cookie);
       $repasshanlder=$repasshanlder + 1;
  	  #
  	  # Reading value of query string 
@@ -207,17 +228,10 @@ sub handler    {
       } else {
          $content_type="-----";
       }
-     # unless ($f->ctx) {
-     # }
-
-
-
 	  if ($ImageType{$content_type}) {
 	          my $imageToConvert;
 	          my $imagefile="";
 	          if ($convertimage eq "true" && $variabile ne "device=false") {
-				  my $width=0;
-				  my $height=0;  
 				  if ($ArrayQuery{height}) {
 				       if ( $ArrayQuery{height} =~ /^-?\d/) {
 				       		$height=$ArrayQuery{height};
@@ -234,7 +248,8 @@ sub handler    {
 				       		$width=$ArrayQuery{dim} * $width / 100;
 				       }
 				  }
- 
+       $s->warn("($width,$height)");
+
 
 				  $imagefile="$resizeimagedirectory/$width.$file";
 				  #
@@ -308,7 +323,7 @@ Image::Resize;
 
 This module have the scope to manage with Apache2::WURFLFilter module the images for mobile devices. 
 
-For more details: http://www.idelfuschini.it/en/apache-mobile-filter.html
+For more details: http://www.idelfuschini.it/apache-mobile-filter-v2x.html
 
 NOTE: this software need wurfl.xml you can download it directly from this site: http://wurfl.sourceforge.net or you canset the filter to download it directly.
 
