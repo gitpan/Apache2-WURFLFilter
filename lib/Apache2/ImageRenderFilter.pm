@@ -34,7 +34,7 @@ package Apache2::ImageRenderFilter;
   # 
 
   use vars qw($VERSION);
-  $VERSION= "2.01";
+  $VERSION= "2.02";
   my %Capability;
   my %Array_fb;
   my %Array_id;
@@ -53,7 +53,6 @@ package Apache2::ImageRenderFilter;
   my $intelliswitch="false";
   my $mobileversionurl;
   my $fullbrowserurl;
-  my $cookieset="true";
   my $querystring="false";
   my $showdefaultvariable="false";
   my $wurflnetdownload="false";
@@ -159,26 +158,6 @@ sub loadConfigFile {
 	      
 	    printLog("Finish loading  parameter");
 }
-sub readCookie {
-    my ($cookie_search) = @_;
-    my $param_tofound;
-    my $string_tofound;
-    my $value;
-    my $width="0";
-    my $height="0";
-    my @pairs = split(/;/, $cookie_search);
-    my $name;
-    my $value;
-    foreach $param_tofound (@pairs) {
-       ($string_tofound,$value)=split(/=/, $param_tofound);
-       if ($string_tofound eq "amf") {
-         ($width,$height)=split(/\|/, $value);;
-       }
-    }   
-    return ($width,$height);
-}
-
-
 sub handler    {
       my $f = shift;
       my $capability2;
@@ -204,7 +183,12 @@ sub handler    {
       my %ArrayQuery;
       my $var;
       my $cookie = $f->r->headers_in->{Cookie} || '';
-      my ($width,$height)=readCookie($cookie);
+      my $width=0;
+      my $height=0;
+      $width=$f->r->pnotes('width');
+      if ($f->r->pnotes('height')) {
+         $height=$f->r->pnotes('height');
+      }
       $repasshanlder=$repasshanlder + 1;
  	  #
  	  # Reading value of query string 
@@ -248,9 +232,6 @@ sub handler    {
 				       		$width=$ArrayQuery{dim} * $width / 100;
 				       }
 				  }
-       $s->warn("($width,$height)");
-
-
 				  $imagefile="$resizeimagedirectory/$width.$file";
 				  #
 				  # control if image exist

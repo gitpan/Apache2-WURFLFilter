@@ -31,7 +31,7 @@ package Apache2::WURFLFilter;
   # 
 
   use vars qw($VERSION);
-  $VERSION= "2.01";
+  $VERSION= "2.02";
   my %Capability;
   my %Array_fb;
   my %Array_id;
@@ -459,12 +459,7 @@ sub handler {
 	  $ArrayCapFound{is_transcoder}='false';
       my %ArrayQuery;
       my $var;
-	  if ($ImageType{$content_type}) {
-		 $f->subprocess_env("AMF_VER" => $VERSION);
-		 $return_value=Apache2::Const::DECLINED;
-	  } else {
-
-		  if ($query_string) {
+	  if ($query_string) {
 			  my @vars = split(/&/, $query_string); 	  
 			  foreach $var (sort @vars){
 					   if ($var) {
@@ -477,16 +472,16 @@ sub handler {
 							$ArrayQuery{$v}=$i;
 						}
 			  }
-		  }
+	   }
 		  if ($ArrayQuery{amf}) {
 					$user_agent=$ArrayQuery{amf};
 		  }
 		  
 	
 	
-						if (index($user_agent,'UP.Link') >0 ) {
-							$user_agent=substr($user_agent,0,index($user_agent,'UP.Link'));
-						}
+		if (index($user_agent,'UP.Link') >0 ) {
+			$user_agent=substr($user_agent,0,index($user_agent,'UP.Link'));
+		}
 								if ($cacheArray2{$user_agent}) {
 									#
 									# I'm here only for old device
@@ -503,9 +498,9 @@ sub handler {
 										 my $upper2=uc($string_tofound);
 										 $f->subprocess_env("AMF_$upper2" => $ArrayCapFound{$string_tofound});
 								   }
-								   $id=$ArrayCapFound{id};
-								$f->err_headers_out->set('Set-Cookie' => "amf=$ArrayCapFound{max_image_width}|$ArrayCapFound{max_image_height}; path=/;");
-								   
+								   $id=$ArrayCapFound{id};								   
+								   $f->pnotes('width' => $ArrayCapFound{max_image_width}); 
+								   $f->pnotes('height' => $ArrayCapFound{max_image_height});
 								} else {
 									#
 									# I'm here only for new device
@@ -536,8 +531,8 @@ sub handler {
 								 }
 								 $variabile2="id=$id&$variabile2";
 								 $f->log->warn("cookie=amf=$ArrayCapFound{max_image_width}|$ArrayCapFound{max_image_height}");
-								$f->err_headers_out->set('Set-Cookie' => "amf=$ArrayCapFound{max_image_width}|$ArrayCapFound{max_image_height}; path=/;");
-
+								$f->pnotes('width' => $ArrayCapFound{max_image_width}); 
+								$f->pnotes('height' => $ArrayCapFound{max_image_height});
 								$f->subprocess_env("AMF_ID" => $id);
 								$cacheArray2{$user_agent}=$variabile2;
 					} else {
@@ -588,7 +583,7 @@ sub handler {
 		 $f->subprocess_env("AMF_VER" => $VERSION);
 		 $return_value=Apache2::Const::DECLINED;
 		}
-	}
+
     return $return_value;
 
 }
@@ -677,6 +672,7 @@ sub GetMultipleUa {
      	}
      }
   }
+
   return %ArrayUAparse;
 
 }
