@@ -1,3 +1,8 @@
+WURFLFilter 2.03
+Added Parameter CookieCacheSystem to enable cookie cache mechanism.
+Cache cookie system
+Clear code
+
 WURFLFilter 2.02
 I leaved (in the same day) the cookie system, and I'm using pnote 
 
@@ -31,7 +36,7 @@ Added Parameter DetectAccuracy to set the accuracy of device detection (default 
 
 
 WURFLFilter 1.60
-Added parameter for sttieng "Apache Mobile Filter" into httpd.conf
+Added parameter for setting "Apache Mobile Filter" into httpd.conf
 Added Parameter LoadWebPatch to set if you want to load a patch file (default is false)
 Added Parameter DirWebPatch to set where you set your patch file
 Added Parameter PatchWurflNetDownload to set if you download from net the patch file (default is false)

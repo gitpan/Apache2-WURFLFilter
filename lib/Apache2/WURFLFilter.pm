@@ -3,7 +3,7 @@
 
 #
 # Created by Idel Fuschini 
-# Date: 20/05/09
+# Date: 01/07/09
 # Site: http://www.idelfuschini.it
 # Mail: idel.fuschini@gmail.com
 
@@ -31,7 +31,7 @@ package Apache2::WURFLFilter;
   # 
 
   use vars qw($VERSION);
-  $VERSION= "2.02";
+  $VERSION= "2.03";
   my %Capability;
   my %Array_fb;
   my %Array_id;
@@ -68,6 +68,8 @@ package Apache2::WURFLFilter;
   my $redirecttranscoderurl="none";
   my $detectaccuracy="false";
   my $listall="false";
+  my $cookiecachesystem="false";
+  
   $ImageType{'png'}="png";
   $ImageType{'gif'}="gif";
   $ImageType{'jpg'}="jpg";
@@ -89,14 +91,14 @@ package Apache2::WURFLFilter;
    
   printLog("WURFLFilter Version $VERSION");
   if ($ENV{MOBILE_HOME}) {
-	  &loadConfigFile("$ENV{MOBILE_HOME}/WURFLFilterConfig.xml","$ENV{MOBILE_HOME}/wurfl.xml");
+	  &loadConfigFile("$ENV{MOBILE_HOME}/wurfl.xml");
   } else {
 	  printLog("MOBILE_HOME not exist.	Please set the variable MOBILE_HOME into httpd.conf");
 	  ModPerl::Util::exit();
   }
 
 sub loadConfigFile {
-	     my ($file,$file2) = @_;
+	     my ($fileWurfl) = @_;
 		 my $null="";
 		 my $null2="";
 		 my $null3="";
@@ -169,6 +171,10 @@ sub loadConfigFile {
 				$detectaccuracy=$ENV{DetectAccuracy};
 				printLog("DetectAccuracy is: $detectaccuracy");
 			 }	
+			 if ($ENV{CookieCacheSystem}) {
+				$cookiecachesystem=$ENV{CookieCacheSystem};
+				printLog("CookieCacheSystem is: $cookiecachesystem");
+			 }	
 
 
           if ($log4wurfl eq "") {
@@ -227,20 +233,20 @@ sub loadConfigFile {
 				}
 			}
 	    } else {
-			if (-e "$file2") {
+			if (-e "$fileWurfl") {
 					printLog("Start loading  WURFL.xml");
-					if (open (IN,"$file2")) {
+					if (open (IN,"$fileWurfl")) {
 						while (<IN>) {
 							 $r_id=parseWURFLFile($_,$r_id);
 							 
 						}
 						close IN;
 					} else {
-					    printLog("Error open file:$file2");
+					    printLog("Error open file:$fileWurfl");
 					    ModPerl::Util::exit();
 					}
 			} else {
-			  printLog("File $file2 not found");
+			  printLog("File $fileWurfl not found");
 			  ModPerl::Util::exit();
 			}
 		}
@@ -264,21 +270,21 @@ sub loadConfigFile {
 					$r_id=parseWURFLFile($row,$r_id);
 				}
 	         } else {
-				$file2=$dirwebpatch;
-				if (-e "$file2") {
+				my $filePatch=$dirwebpatch;
+				if (-e "$filePatch") {
 						printLog("Start loading Web Patch File of WURFL");
-						if (open (IN,"$file2")) {
+						if (open (IN,"$filePatch")) {
 							while (<IN>) {
 								 $r_id=parseWURFLFile($_,$r_id);
 								 
 							}
 							close IN;
 						} else {
-							printLog("Error open file:$file2");
+							printLog("Error open file:$filePatch");
 							ModPerl::Util::exit();
 						}
 				} else {
-				  printLog("File $file2 not found");
+				  printLog("File patch $filePatch not found");
 				  ModPerl::Util::exit();
 				}
 			}
@@ -433,166 +439,11 @@ sub FallBack {
 }
    return %ArrayCapFoundToPass;
 }
-
-sub handler {
-      my $f = shift;
-      my $capability2;
-      my $variabile="";
-      my  $user_agent=$f->headers_in->{'User-Agent'}|| '';
-      my $query_string=$f->args;
-      my $uri = $f->uri();
-      my ($content_type) = $uri =~ /\.(\w+)$/;
-      my @fileArray = split(/\//, $uri);
-      my $file=$fileArray[-1];
-      my $docroot = $f->document_root();
-      my $id="";
-      my $method="";
-      my $location="none";
-      my $width_toSearch;
-      my $type_redirect="internal";
-      my $return_value;
-	  my $dummy="";
-	  my $variabile2="";
-	  my %ArrayCapFound;
-	  my $controlCookie;
-	  my $query_img="";
-	  $ArrayCapFound{is_transcoder}='false';
-      my %ArrayQuery;
-      my $var;
-	  if ($query_string) {
-			  my @vars = split(/&/, $query_string); 	  
-			  foreach $var (sort @vars){
-					   if ($var) {
-							my ($v,$i) = split(/=/, $var);
-							$v =~ tr/+/ /;
-							$v =~ s/%([a-fA-F0-9][a-fA-F0-9])/pack("C", hex($1))/eg;
-							$i =~ tr/+/ /;
-							$i =~ s/%([a-fA-F0-9][a-fA-F0-9])/pack("C", hex($1))/eg;
-							$i =~ s/<!--(.|\n)*-->//g;
-							$ArrayQuery{$v}=$i;
-						}
-			  }
-	   }
-		  if ($ArrayQuery{amf}) {
-					$user_agent=$ArrayQuery{amf};
-		  }
-		  
-	
-	
-		if (index($user_agent,'UP.Link') >0 ) {
-			$user_agent=substr($user_agent,0,index($user_agent,'UP.Link'));
-		}
-								if ($cacheArray2{$user_agent}) {
-									#
-									# I'm here only for old device
-									#
-								   my @pairs = split(/&/, $cacheArray2{$user_agent});
-								   
-								   
-								   my $param_tofound;
-								   my $string_tofound;
-								   foreach $param_tofound (@pairs) {      	       
-										 ($string_tofound,$dummy)=split(/=/, $param_tofound);
-										 $ArrayCapFound{$string_tofound}=$dummy;
-										 
-										 my $upper2=uc($string_tofound);
-										 $f->subprocess_env("AMF_$upper2" => $ArrayCapFound{$string_tofound});
-								   }
-								   $id=$ArrayCapFound{id};								   
-								   $f->pnotes('width' => $ArrayCapFound{max_image_width}); 
-								   $f->pnotes('height' => $ArrayCapFound{max_image_height});
-								} else {
-									#
-									# I'm here only for new device
-									#
-								if ($cacheArray{$user_agent}) {
-								  $id=$cacheArray{$user_agent};
-								} else {
-									if ($user_agent) {
-										$id=IdentifyUAMethod($user_agent,2);
-										$method="IdentifyUAMethod($id),$user_agent";
-									}
-									$cacheArray{$user_agent}=$id;
-								}
-					if ($id ne "") {								
-								%ArrayCapFound=FallBack($id);         
-								my $count=0;
-								my $count2=0;
-								foreach $capability2 (sort keys %ArrayCapFound) {
-									my $visible=0;
-									if ($count2==0) {
-										$variabile2="$capability2=$ArrayCapFound{$capability2}";
-										$count2=1;
-									} else {
-										$variabile2="$variabile2&$capability2=$ArrayCapFound{$capability2}";
-									} 						
-									my $upper=uc($capability2);
-									$f->subprocess_env("AMF_$upper" => $ArrayCapFound{$capability2});
-								 }
-								 $variabile2="id=$id&$variabile2";
-								 $f->log->warn("cookie=amf=$ArrayCapFound{max_image_width}|$ArrayCapFound{max_image_height}");
-								$f->pnotes('width' => $ArrayCapFound{max_image_width}); 
-								$f->pnotes('height' => $ArrayCapFound{max_image_height});
-								$f->subprocess_env("AMF_ID" => $id);
-								$cacheArray2{$user_agent}=$variabile2;
-					} else {
-							$variabile="device=false";            
-							if (printNotFound("$user_agent") eq "nok") {
-							   $f->log->warn("Can't open:$log4wurfl");
-							}
-							$f->log->warn("Device not found:$user_agent");
-						$ArrayCapFound{'device_claims_web_support'}= 'true';
-						$ArrayCapFound{'is_wireless_device'}='false';
-						$cacheArray2{$user_agent}="$variabile&device_claims_web_support=true&is_wireless_device=false";
-						$cacheArray{$user_agent}="device_not_found";
-						$method="";
-					}
-					}
-					if ($method) {
-						$f->log->debug("New id found - $method -->$variabile");
-						$f->log->warn("New id found - $method");
-					}
-	
-					
-		#
-		# Start redirect for mobile site
-		#
-		if ($fullbrowserurl ne 'none' && $ArrayCapFound{'device_claims_web_support'} eq 'true' && $ArrayCapFound{'is_wireless_device'} eq 'false') {
-						$location=$fullbrowserurl;      		
-		} else {
-		   if ($mobileversionurl && 'none') {
-						$location=$mobileversionurl;
-		   }
-		}
-		if ($ArrayCapFound{'is_transcoder'}) {
-							if ($redirecttranscoderurl ne 'none' && $redirecttranscoder eq 'true' && $ArrayCapFound{'is_transcoder'} eq 'true') {
-								$location=$redirecttranscoderurl;
-							}
-		}
-		if ($location ne "none") {
-						   if (substr($location,0,5) eq "http:") {
-						  $f->log->debug("Redirect: $location");
-						  $f->headers_out->set(Location => $location);
-						  $f->status(Apache2::Const::REDIRECT); 
-						  $return_value=Apache2::Const::REDIRECT;
-					   } else {
-						  $f->log->debug("InternalRedirect: $location");
-						  $f->internal_redirect($location);
-					   }
-		} else {
-		 $f->subprocess_env("AMF_VER" => $VERSION);
-		 $return_value=Apache2::Const::DECLINED;
-		}
-
-    return $return_value;
-
-}
-
 sub IdentifyUAMethod {
   my ($UserAgent,$precision) = @_;
   my $ind=0;
   my %ArrayPM;
-  my $pair;
+  my $pair; 
   my $pair2;
   my $id_find="";
   my $dummy;
@@ -600,7 +451,7 @@ sub IdentifyUAMethod {
   my $near_toFind=100;
   my $near_toMatch;
   my %ArrayUAType=GetMultipleUa($UserAgent);  
-  foreach $pair (reverse sort { $a <=> $b }  keys %ArrayUAType)
+  foreach $pair (reverse sort { $a <=> $b }  keys	 %ArrayUAType)
   {
       my $dummy=$ArrayUAType{$pair};
       if ($Array_id{$dummy}) {
@@ -676,6 +527,207 @@ sub GetMultipleUa {
   return %ArrayUAparse;
 
 }
+sub readCookie {
+    my ($cookie_search) = @_;
+    my $param_tofound;
+    my $string_tofound;
+    my $value="";
+    my $id_return="";
+    my @pairs = split(/;/, $cookie_search);
+    my $name;
+    foreach $param_tofound (@pairs) {
+       ($string_tofound,$value)=split(/=/, $param_tofound);
+       if ($string_tofound eq "amf") {
+           $id_return=$value;
+       }
+    }   
+    return $id_return;
+}
+sub handler {
+      my $f = shift;
+      
+      my $capability2;
+      my $variabile="";
+      my $user_agent=$f->headers_in->{'User-Agent'}|| '';
+      my $query_string=$f->args;
+      my $uri = $f->uri();
+      my ($content_type) = $uri =~ /\.(\w+)$/;
+      my @fileArray = split(/\//, $uri);
+      my $file=$fileArray[-1];
+      my $docroot = $f->document_root();
+      my $id="";
+      my $method="";
+      my $location="none";
+      my $width_toSearch;
+      my $type_redirect="internal";
+      my $return_value;
+	  my $dummy="";
+	  my $variabile2="";
+	  my %ArrayCapFound;
+	  my $controlCookie;
+	  my $query_img="";
+	  $ArrayCapFound{is_transcoder}='false';
+      my %ArrayQuery;
+      my $var;
+      
+	  #if ($query_string) {
+	  #		  my @vars = split(/&/, $query_string); 	  
+	  #		  foreach $var (sort @vars){
+	  #				   if ($var) {
+	  #						my ($v,$i) = split(/=/, $var);
+	  #						$v =~ tr/+/ /;
+	  #						$v =~ s/%([a-fA-F0-9][a-fA-F0-9])/pack("C", hex($1))/eg;
+	  #						$i =~ tr/+/ /;
+	  #						$i =~ s/%([a-fA-F0-9][a-fA-F0-9])/pack("C", hex($1))/eg;
+	  #						$i =~ s/<!--(.|\n)*-->//g;
+	  #						$ArrayQuery{$v}=$i;
+	  #					}
+	  #		  }
+	  # }
+	  #	  if ($ArrayQuery{amf}) {
+	  #				$user_agent=$ArrayQuery{amf};
+	  #	  }
+		  
+	
+	
+	  if (index($user_agent,'UP.Link') >0 ) {
+			$user_agent=substr($user_agent,0,index($user_agent,'UP.Link'));
+	  }
+      my $cookie = $f->headers_in->{Cookie} || '';
+      $id=readCookie($cookie);
+      if ($cacheArray{$user_agent}) {
+          #
+          # cookie is not empty so I try to read in memory cache on my httpd cache
+          #
+          $id=$cacheArray{$user_agent};
+          if ($cacheArray2{$id}) {
+				#
+				# I'm here only for old device
+				#
+				my @pairs = split(/&/, $cacheArray2{$id});
+				my $param_tofound;
+				my $string_tofound;
+				foreach $param_tofound (@pairs) {      	       
+					($string_tofound,$dummy)=split(/=/, $param_tofound);
+					$ArrayCapFound{$string_tofound}=$dummy;
+					my $upper2=uc($string_tofound);
+					$f->subprocess_env("AMF_$upper2" => $ArrayCapFound{$string_tofound});
+				}
+				$id=$ArrayCapFound{id};								   
+				$f->pnotes('width' => $ArrayCapFound{max_image_width}); 
+				$f->pnotes('height' => $ArrayCapFound{max_image_height});
+		  }
+      } else {
+              if ($id eq "") { 
+				  if ($user_agent) {
+							$id=IdentifyUAMethod($user_agent,2);
+							$method="IdentifyUAMethod($id),$user_agent";
+							$cacheArray{$user_agent}=$id;
+				  }
+              }                        
+		      if ($id ne "") {
+		          #
+		          # cookie is not empty so I try to read in memory cache on my httpd cache
+		          #
+		          if ($cacheArray2{$id}) {
+						#
+						# I'm here only for old device looking in cache
+						#
+						my @pairs = split(/&/, $cacheArray2{$id});
+						my $param_tofound;
+						my $string_tofound;
+						foreach $param_tofound (@pairs) {      	       
+							($string_tofound,$dummy)=split(/=/, $param_tofound);
+							$ArrayCapFound{$string_tofound}=$dummy;
+							my $upper2=uc($string_tofound);
+							$f->subprocess_env("AMF_$upper2" => $ArrayCapFound{$string_tofound});
+						}
+						$id=$ArrayCapFound{id};								   
+						$f->pnotes('width' => $ArrayCapFound{max_image_width}); 
+						$f->pnotes('height' => $ArrayCapFound{max_image_height});
+				  } else {
+						%ArrayCapFound=FallBack($id);         
+						my $count=0;
+						my $count2=0;
+						foreach $capability2 (sort keys %ArrayCapFound) {
+							my $visible=0;
+							if ($count2==0) {
+								$variabile2="$capability2=$ArrayCapFound{$capability2}";
+								$count2=1;
+							} else {
+										$variabile2="$variabile2&$capability2=$ArrayCapFound{$capability2}";
+							} 						
+							my $upper=uc($capability2);
+							$f->subprocess_env("AMF_$upper" => $ArrayCapFound{$capability2});
+						}
+						$variabile2="id=$id&$variabile2";
+						$f->pnotes('width' => $ArrayCapFound{max_image_width}); 
+						$f->pnotes('height' => $ArrayCapFound{max_image_height});
+						$f->subprocess_env("AMF_ID" => $id);
+						$cacheArray2{$id}=$variabile2;
+						$cacheArray{$user_agent}=$id;
+						if ($cookiecachesystem eq "true") {
+							$f->err_headers_out->set('Set-Cookie' => "amf=$id; path=/;");	
+						}		  			  
+				  }
+	           
+	      	 } else {
+	      	     #
+	      	     # unknown device 
+	      	     #
+	 			 $variabile="device=false";            
+				 if (printNotFound("$user_agent") eq "nok") {
+			  		$f->log->warn("Can't open:$log4wurfl");
+				 }
+				 $f->log->warn("Device not found:$user_agent");
+				 $ArrayCapFound{'device_claims_web_support'}= 'true';
+				 $ArrayCapFound{'is_wireless_device'}='false';				
+				 $cacheArray2{$user_agent}="$variabile&device_claims_web_support=true&is_wireless_device=false";
+				 $cacheArray{$user_agent}="device_not_found";
+				 $method="";     	 
+	      	  }
+      }		
+	  if ($method) {
+			$f->log->debug("New id found - $method -->$variabile");
+			$f->log->warn("New id found - $method");
+      }
+	
+					
+		#
+		# Start redirect for mobile site
+		#
+		if ($fullbrowserurl ne 'none' && $ArrayCapFound{'device_claims_web_support'} eq 'true' && $ArrayCapFound{'is_wireless_device'} eq 'false') {
+						$location=$fullbrowserurl;      		
+		} else {
+		   if ($mobileversionurl && 'none') {
+						$location=$mobileversionurl;
+		   }
+		}
+		if ($ArrayCapFound{'is_transcoder'}) {
+							if ($redirecttranscoderurl ne 'none' && $redirecttranscoder eq 'true' && $ArrayCapFound{'is_transcoder'} eq 'true') {
+								$location=$redirecttranscoderurl;
+							}
+		}
+		if ($location ne "none") {
+						   if (substr($location,0,5) eq "http:") {
+						  $f->log->debug("Redirect: $location");
+						  $f->headers_out->set(Location => $location);
+						  $f->status(Apache2::Const::REDIRECT); 
+						  $return_value=Apache2::Const::REDIRECT;
+					   } else {
+						  $f->log->debug("InternalRedirect: $location");
+						  $f->internal_redirect($location);
+					   }
+		} else {
+		 $f->subprocess_env("AMF_VER" => $VERSION);
+		 $return_value=Apache2::Const::DECLINED;
+		}
+
+    return $return_value;
+
+}
+
+
   1; 
 =head1 NAME
 
@@ -690,7 +742,7 @@ Text::LevenshteinXS
 
 =head1 DESCRIPTION
 
-This module is the final solution to manage WURFL information. WURFLFIlter identify the device and give you the value of all capabilities that stored into WURFL.xml
+The module detects the mobile device and passes the WURFL capabilities on to the other web application as environment variables. It can also be used to resize images on the fly to adapt to the screen size of the mobile device.
 
 For more details: http://www.idelfuschini.it/it/apache-mobile-filter-v2x.html
 

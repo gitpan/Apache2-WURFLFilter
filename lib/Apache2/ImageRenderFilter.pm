@@ -34,7 +34,7 @@ package Apache2::ImageRenderFilter;
   # 
 
   use vars qw($VERSION);
-  $VERSION= "2.02";
+  $VERSION= "2.03";
   my %Capability;
   my %Array_fb;
   my %Array_id;
@@ -183,12 +183,16 @@ sub handler    {
       my %ArrayQuery;
       my $var;
       my $cookie = $f->r->headers_in->{Cookie} || '';
-      my $width=0;
-      my $height=0;
-      $width=$f->r->pnotes('width');
+      my $width=1000;
+      my $height=1000;
+      my $image2="";
+      if ($f->r->pnotes('width')) {      
+      	$width=$f->r->pnotes('width')
+      }
       if ($f->r->pnotes('height')) {
          $height=$f->r->pnotes('height');
       }
+      #$f->r->warn("$width,$height");
       $repasshanlder=$repasshanlder + 1;
  	  #
  	  # Reading value of query string 
@@ -249,15 +253,18 @@ sub handler    {
 					  } else { 
 						  my $image = Image::Resize->new("$imageToConvert");
 						  my $gd = $image->resize($width, $height);
+						  
 						  if (open(FH, ">$docroot$imagefile")) {
 							if ($content_type eq "gif") {
 								print FH $gd->gif();
+								
 							}
 							if ($content_type eq "jpg") {
 								print FH $gd->jpeg();
 							}
 							if ($content_type eq "png") {
-								print FH $gd->png();
+								$image2=$gd->png();
+								print FH $image2;
 							}
 						  close(FH);
 						  } else {
@@ -268,17 +275,6 @@ sub handler    {
 					  $return_value=Apache2::Const::DECLINED;	  	
 				  }
               } else {
-                 if ( -e "$resizeimagedirectory/$file") {
-						$dummy="";
-				  } else {
-						  if ($virtualdirectoryimages eq 'true') {
-							 $imageToConvert="$virtualdirectory$uri";
-						  } else {
-							 $imageToConvert="$docroot$uri";
-						  }			  
-                  		copy($imageToConvert, "$docroot$resizeimagedirectory");
-                  }
-				  
                   $f->r->internal_redirect("$resizeimagedirectory/$file");
                   $return_value=Apache2::Const::OK;	
               }			  
