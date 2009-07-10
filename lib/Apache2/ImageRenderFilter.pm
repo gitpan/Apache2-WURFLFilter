@@ -31,7 +31,7 @@ package Apache2::ImageRenderFilter;
   # 
 
   use vars qw($VERSION);
-  $VERSION= "2.04a";
+  $VERSION= "2.04b";
   my %Capability;
   my %Array_fb;
   my %Array_id;
@@ -273,14 +273,23 @@ Apache2::ImageRenderFilter - used to resize images on the fly to adapt to the sc
 =head1 COREQUISITES
 
 Apache2::RequestRec
+
 Apache2::RequestUtil
+
 Apache2::SubRequest
+
 Apache2::Log
+
 Apache2::Filter
+
 APR::Table
+
 LWP::Simple
+
 Image::Resize
+
 Apache2::Const
+
 File::Copy;
 
 
@@ -292,19 +301,28 @@ For more details: http://www.idelfuschini.it/apache-mobile-filter-v2x.html
 
 An example of how to set the httpd.conf is below:
 
-PerlSetEnv MOBILE_HOME server_root/MobileFilter
+=over 4
 
-#This indicate to the filter where put the transformated images (cache directory) this directory must be writeable
-PerlSetEnv ResizeImageDirectory /transform
+=item C<PerlSetEnv MOBILE_HOME server_root/MobileFilter>
 
-PerlModule Apache2::WURFLFilter
-PerlTransHandler +Apache2::WURFLFilter
+This indicate to the filter where put the transformated images (cache directory) this directory must be writeable
 
-#This is indicate to the filter were are stored the high definition images
-<Location /mobile/*>
-    SetHandler modperl
-    PerlInputFilterHandler Apache2::ImageRenderFilter 
-</Location> 
+=item C<PerlSetEnv ResizeImageDirectory /transform>
+
+=item C<PerlModule Apache2::WURFLFilter>
+=item C<PerlTransHandler +Apache2::WURFLFilter>
+
+This is indicate to the filter were are stored the high definition images
+
+=item C<<Location /mobile/*>>
+
+=item C<    SetHandler modperl>
+
+=item C<    PerlInputFilterHandler Apache2::ImageRenderFilter >
+
+=item C<</Location>> 
+
+=back
 
 NOTE: this software need wurfl.xml you can download it directly from this site: http://wurfl.sourceforge.net or you can set the filter to download it directly.
 
@@ -318,4 +336,3 @@ Demo page of the filter: http://apachemobilefilter.nogoogle.it/php_test.php (tha
 
 Idel Fuschini (idel.fuschini [at] gmail [dot] com
 
-=cut

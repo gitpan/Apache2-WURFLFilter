@@ -30,7 +30,7 @@ package Apache2::WURFLFilter;
   # 
 
   use vars qw($VERSION);
-  $VERSION= "2.04a";
+  $VERSION= "2.04b";
   my %Capability;
   my %Array_fb;
   my %Array_id;
@@ -686,32 +686,54 @@ Apache2::WURFLFilter - The module detects the mobile device and passes the WURFL
 
 =head1 SYNOPSYS
 
-#The configuration of V2.x of B<"Apache Mobile Filter"> is very simple thane V1.x, I have deprecated the intelliswitch method because I think that the filter is faster.
-#Add this parameter into httpd.conf file
+The configuration of V2.x of B<"Apache Mobile Filter"> is very simple thane V1.x, I have deprecated the intelliswitch method because I think that the filter is faster.
 
-PerlSetEnv CapabilityList max_image_width,j2me_midp_2_0 *
-PerlSetEnv MobileVersionUrl /cgi-bin/perl.html ** (default is "none" that mean the filter pass through)
-PerlSetEnv FullBrowserUrl http://www.google.com ** (default is "none" that mean the filter pass through)
-PerlSetEnv WurflNetDownload true***
-PerlSetEnv DownloadWurflURL http://downloads.sourceforge.net/wurfl/wurfl-latest.zip****
-PerlSetEnv DownloadZipFile false
-PerlSetEnv ResizeImageDirectory /transform
-PerlSetEnv Log4WurflNoDeviceDetect /apache2_dev/WurflLog/DeviceNotFound.log
-PerlSetEnv LoadWebPatch true
-PerlSetEnv DirWebPatch /apache2_dev/Apache2/web_browsers_patch.xml   
-PerlSetEnv PatchWurflNetDownload true
-PerlSetEnv PatchWurflUrl http://wurfl.sourceforge.net/web_browsers_patch.xml
-PerlSetEnv RedirectTranscoder true
-PerlSetEnv RedirectTranscoderUrl /transcoderpage.html (default is "none" that mean the filter pass through)
-PerlSetEnv CookieCacheSystem true (default is false, but for production mode is suggested to set in true) 
+Add this parameter into httpd.conf file:
 
-PerlModule Apache2::WURFLFilter
-PerlTransHandler +Apache2::WURFLFilter
+=over 4
+
+=item C<PerlSetEnv CapabilityList max_image_width,j2me_midp_2_0> *
+
+=item C<PerlSetEnv MobileVersionUrl /cgi-bin/perl.html> ** (default is "none" that mean the filter pass through)
+
+=item C<PerlSetEnv FullBrowserUrl http://www.google.com> ** (default is "none" that mean the filter pass through)
+
+=item C<PerlSetEnv WurflNetDownload true>***
+
+=item C<PerlSetEnv DownloadWurflURL http://downloads.sourceforge.net/wurfl/wurfl-latest.zip>****
+
+=item C<PerlSetEnv DownloadZipFile false>
+
+=item C<PerlSetEnv ResizeImageDirectory /transform>
+
+=item C<PerlSetEnv LoadWebPatch true>
+
+=item C<PerlSetEnv DirWebPatch /apache2_dev/Apache2/web_browsers_patch.xml>   
+
+=item C<PerlSetEnv PatchWurflNetDownload true>
+
+=item C<PerlSetEnv PatchWurflUrl http://wurfl.sourceforge.net/web_browsers_patch.xml>
+
+=item C<PerlSetEnv RedirectTranscoder true>
+
+=item C<PerlSetEnv RedirectTranscoderUrl /transcoderpage.html> (default is "none" that mean the filter pass through)
+
+=item C<PerlSetEnv CookieCacheSystem true> (default is false, but for production mode is suggested to set in true) 
+
+=item C<PerlModule Apache2::WURFLFilter>
+
+=item C<PerlTransHandler +Apache2::WURFLFilter>
+
+=back
 
 * the field separator of each capability you want to consider in your mobile site is ",". Important you now can set ALL (default value) if you want that the filter managed all wurfl capabilities
+
 **if you put a relative url (for example "/path") the filter done an internal redirect, if you put a url redirect with protocol (for example "http:") the filter done a classic redirect
+
 ***if this parameter is fault the filter try to read  the wurfl.xml file from MOBILE_HOME path
+
 ***if you want to download directly the last version of WURFL.xml you can set the url parameter to http://downloads.sourceforge.net/wurfl/wurfl-latest.zip
+
 ****if you put to true value you can detect a little bit more device, but for strange UA the method take  a lot of time 
 
 
@@ -719,7 +741,7 @@ PerlTransHandler +Apache2::WURFLFilter
 
 For this configuration you need to set this parameter
 
-=over 4
+=over 4	
 
 =item C<ConvertImage> (boolean): activate/deactivate the adaptation of images to the device
 
@@ -744,6 +766,7 @@ For this configuration you need to set this parameter
 =item C<Log4WurflNoDeviceDetect>: it's a necessary log for detect new device that WURFL not has included
 
 =item C<LoadWebPatch> (boolean): if you want to use a wurfl patch file
+
 =item C<DirWebPatch>: set it for indicate where is the patch file on your server
 
 =item C<PatchWurflNetDownload>(boolean): if you want download the patch file
@@ -767,5 +790,7 @@ For more details: http://www.idelfuschini.it/apache-mobile-filter-v2x.html
 Demo page of the filter: http://apachemobilefilter.nogoogle.it/php_test.php (thanks Ivan alias sigmund)
 
 =head1 AUTHOR
+
 Idel Fuschini (idel.fuschini [at] gmail [dot] com
+
 =cut
