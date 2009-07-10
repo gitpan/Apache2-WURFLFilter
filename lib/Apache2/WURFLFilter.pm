@@ -30,7 +30,7 @@ package Apache2::WURFLFilter;
   # 
 
   use vars qw($VERSION);
-  $VERSION= "2.04";
+  $VERSION= "2.04a";
   my %Capability;
   my %Array_fb;
   my %Array_id;
@@ -677,23 +677,17 @@ sub handler {
     return $return_value;
 
 }
-
-
-  1; 
+1; 
+__END__
+	
 =head1 NAME
 
 Apache2::WURFLFilter - The module detects the mobile device and passes the WURFL capabilities on to the other web application as environment variables
 
+=head1 SYNOPSYS
 
-=head1 COREQUISITES
-
-CGI
-Apache2
-
-=head1 SYNOPSIS
-The configuration of V2.x of "Apache Mobile Filter" is very simple thane V1.x, I have deprecated the intelliswitch method because I think that the filter is faster.
-
-Add this parameter into httpd.conf file
+#The configuration of V2.x of B<"Apache Mobile Filter"> is very simple thane V1.x, I have deprecated the intelliswitch method because I think that the filter is faster.
+#Add this parameter into httpd.conf file
 
 PerlSetEnv CapabilityList max_image_width,j2me_midp_2_0 *
 PerlSetEnv MobileVersionUrl /cgi-bin/perl.html ** (default is "none" that mean the filter pass through)
@@ -715,39 +709,50 @@ PerlModule Apache2::WURFLFilter
 PerlTransHandler +Apache2::WURFLFilter
 
 * the field separator of each capability you want to consider in your mobile site is ",". Important you now can set ALL (default value) if you want that the filter managed all wurfl capabilities
-
 **if you put a relative url (for example "/path") the filter done an internal redirect, if you put a url redirect with protocol (for example "http:") the filter done a classic redirect
-
 ***if this parameter is fault the filter try to read  the wurfl.xml file from MOBILE_HOME path
-
 ***if you want to download directly the last version of WURFL.xml you can set the url parameter to http://downloads.sourceforge.net/wurfl/wurfl-latest.zip
-
 ****if you put to true value you can detect a little bit more device, but for strange UA the method take  a lot of time 
 
- 
+
+=head1 DESCRIPTION
 
 For this configuration you need to set this parameter
+
 =over 4
 
-=item * ConvertImage (boolean): activate/deactivate the adaptation of images to the device
-=item * ResizeImageDirectory: where the new images are saved for cache system, remember this directory must be into docroot directory and also must be writeble from the server
-=item * WurflNetDownload (boolean): if you want to download WURFL xml directly from WURFL site or from an intranet URL (good to have only single point of Wurfl access), default is set to false
-=item * DownloadZipFile (boolean): if you want to download a zip file of WURFL
-=item * DownloadWurflURL: the url of WURFL DB to download**
-=item * CapabilityList/capability : is the capability value you want to pass to you site
-=item * MobileVersionUrl: is the URL address of mobile version site *
-=item * FullBrowserUrl: is the URL address of PC version site *
-=item * RedirectTranscoderURL: the URL where you want to redirect the transcoder*
-=item * ConvertOnlyImages (boolean): if you want to use the filter only for the images and not for other content
-=item * Log4WurflNoDeviceDetect: it's a necessary log for detect new device that WURFL not has included
-=item * LoadWebPatch (boolean): if you want to use a wurfl patch file
-=item * DirWebPatch: set it for indicate where is the patch file on your server
-=item * PatchWurflNetDownload(boolean): if you want download the patch file
-=item * PatchWurflUrl: the URL of the patch file (is readed ony if PatchWurflNet is setted with true)
-=item * DetectAccuracy: if you want to detect with more precision the devices (default is false), I suggest if it's not necessary to leave at false 
+=item C<ConvertImage> (boolean): activate/deactivate the adaptation of images to the device
+
+=item C<ResizeImageDirectory>: where the new images are saved for cache system, remember this directory must be into docroot directory and also must be writeble from the server
+
+=item C<WurflNetDownload> (boolean): if you want to download WURFL xml directly from WURFL site or from an intranet URL (good to have only single point of Wurfl access), default is set to false
+
+=item C<DownloadZipFile> (boolean): if you want to download a zip file of WURFL
+
+=item C<DownloadWurflURL>: the url of WURFL DB to download**
+
+=item C<CapabilityList> : is the capability value you want to pass to you site
+
+=item C<MobileVersionUrl>: is the URL address of mobile version site *
+
+=item C<FullBrowserUrl>: is the URL address of PC version site *
+
+=item C<RedirectTranscoderURL>: the URL where you want to redirect the transcoder*
+
+=item C<ConvertOnlyImages> (boolean): if you want to use the filter only for the images and not for other content
+
+=item C<Log4WurflNoDeviceDetect>: it's a necessary log for detect new device that WURFL not has included
+
+=item C<LoadWebPatch> (boolean): if you want to use a wurfl patch file
+=item C<DirWebPatch>: set it for indicate where is the patch file on your server
+
+=item C<PatchWurflNetDownload>(boolean): if you want download the patch file
+
+=item C<PatchWurflUrl>: the URL of the patch file (is readed ony if PatchWurflNet is setted with true)
+
+=item C<DetectAccuracy>: if you want to detect with more precision the devices (default is false), I suggest if it's not necessary to leave at false 
 
 =back
-
 
 *if you put a relative url (for example "/path") the filter done an internal redirect, if you put a url redirect with protocol (for example "http:") the filter done a classic redirect. If the parameter is not set the filter is a passthrough 
 
@@ -755,7 +760,7 @@ For this configuration you need to set this parameter
 
 *** for more info about transcoder problem go to http://wurfl.sourceforge.net
 
-=head1 DOCUMENTATION & DEMO
+=head1 SEE ALSO
 
 For more details: http://www.idelfuschini.it/apache-mobile-filter-v2x.html
 

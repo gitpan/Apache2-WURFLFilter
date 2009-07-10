@@ -31,7 +31,7 @@ package Apache2::ImageRenderFilter;
   # 
 
   use vars qw($VERSION);
-  $VERSION= "2.03";
+  $VERSION= "2.04a";
   my %Capability;
   my %Array_fb;
   my %Array_id;
@@ -281,11 +281,10 @@ APR::Table
 LWP::Simple
 Image::Resize
 Apache2::Const
-IO::Uncompress::Unzip
 File::Copy;
 
 
-=head1 SYNOPSIS
+=head1 DESCRIPTION
 
 This module have the scope to manage with WURFLFilter.pm module the images for mobile devices. 
 
@@ -307,17 +306,16 @@ PerlTransHandler +Apache2::WURFLFilter
     PerlInputFilterHandler Apache2::ImageRenderFilter 
 </Location> 
 
-
-
 NOTE: this software need wurfl.xml you can download it directly from this site: http://wurfl.sourceforge.net or you can set the filter to download it directly.
 
-=head1 DOCUMENTATION & DEMO
+=head1 SEE ALSO
 
 For more details: http://www.idelfuschini.it/apache-mobile-filter-v2x.html
 
 Demo page of the filter: http://apachemobilefilter.nogoogle.it/php_test.php (thanks Ivan alias sigmund)
 
 =head1 AUTHOR
+
 Idel Fuschini (idel.fuschini [at] gmail [dot] com
 
 =cut
