@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               Apache2-WURFLFilter
-version:            2.03
+version:            2.04
 abstract:           ~
 author:
     - Idel Fuschini (idel@idelfuschini.it)
@@ -19,7 +19,6 @@ requires:
     Image::Resize:        0
     IO::Uncompress::Unzip:  0
     LWP::Simple:          0
-    Text::LevenshteinXS:  0
 no_index:
     directory:
         - t

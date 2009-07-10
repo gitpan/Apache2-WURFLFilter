@@ -17,7 +17,6 @@ WriteMakefile(
                      'Apache2::RequestRec'      => 0,
                      'Apache2::RequestUtil' => 0,
                      'CGI::Cookie'      => 0, 
-                     'Text::LevenshteinXS'  => 0, 
                      'APR::Table'        => 0, 
                      'Apache2::Const'        => 0, 
 					 'Image::Resize'        => 0,

@@ -23,10 +23,7 @@ package Apache2::ImageRenderFilter;
   use LWP::Simple;
   use Image::Resize;
   use Apache2::Const -compile => qw(OK REDIRECT DECLINED);
-  use IO::Uncompress::Unzip qw(unzip $UnzipError) ;
-  use File::Copy;
   use constant BUFF_LEN => 1024;
-  use CGI::Cookie ();
 
 
   #
@@ -57,12 +54,10 @@ package Apache2::ImageRenderFilter;
   my $showdefaultvariable="false";
   my $wurflnetdownload="false";
   my $downloadwurflurl="false";
-  my $convertimage="false";
   my $resizeimagedirectory="";
   my $downloadzipfile="true";
   my $virtualdirectoryimages="false";
   my $virtualdirectory="";
-  my $convertonlyimages="false"; 
   my $repasshanlder=0;
   my $globalpassvariable="";
   my $log4wurfl="";
@@ -138,23 +133,13 @@ sub loadConfigFile {
 	     my $dummy;
 	      	#The filter
 	      	printLog("Start read configuration from httpd.conf");
-	      	 if ($ENV{ConvertImage}) {
-				$convertimage=$ENV{ConvertImage};
-				printLog("ConvertImage is: $convertimage");
-			 }	
 	      	 if ($ENV{ResizeImageDirectory}) {
 				$resizeimagedirectory=$ENV{ResizeImageDirectory};
 				printLog("ResizeImageDirectory is: $resizeimagedirectory");
-			 }	
-	      	 if ($ENV{WebAppConvertImages}) {
-				$virtualdirectoryimages=$ENV{WebAppConvertImages};
-				printLog("WebAppConvertImages is: $virtualdirectoryimages");
-			 }	
-	      	 if ($ENV{ConvertOnlyImages}) {
-				$convertonlyimages=$ENV{ConvertOnlyImages};
-				printLog("ConvertOnlyImages is: $convertonlyimages");
-			 }	
-
+			 } else {
+			    printLog("ERROR: ResizeImageDirectory parameter must be setted");
+			    ModPerl::Util::exit();
+			 }
 	      
 	    printLog("Finish loading  parameter");
 }
@@ -219,7 +204,7 @@ sub handler    {
 	  if ($ImageType{$content_type}) {
 	          my $imageToConvert;
 	          my $imagefile="";
-	          if ($convertimage eq "true" && $variabile ne "device=false") {
+	          if ($variabile ne "device=false") {
 				  if ($ArrayQuery{height}) {
 				       if ( $ArrayQuery{height} =~ /^-?\d/) {
 				       		$height=$ArrayQuery{height};
@@ -241,11 +226,7 @@ sub handler    {
 				  # control if image exist
 				  #
 				 
-				  if ($virtualdirectoryimages eq 'true') {
-				     $imageToConvert="$virtualdirectory$uri";
-				  } else {
-				     $imageToConvert="$docroot$uri";
-				  }
+				  $imageToConvert="$docroot$uri";
 				  $return_value=Apache2::Const::DECLINED;
 				  if ( -e "$imageToConvert") {
 					  if ( -e "$docroot$imagefile") {
@@ -286,23 +267,57 @@ sub handler    {
   1; 
 =head1 NAME
 
-Apache2::ImageRenderFilter - is a Apache Mobile Filter that manage image to the correct mobile device
+Apache2::ImageRenderFilter - used to resize images on the fly to adapt to the screen size of the mobile device
 
 
 =head1 COREQUISITES
 
-CGI
-Apache2
-Image::Resize;
+Apache2::RequestRec
+Apache2::RequestUtil
+Apache2::SubRequest
+Apache2::Log
+Apache2::Filter
+APR::Table
+LWP::Simple
+Image::Resize
+Apache2::Const
+IO::Uncompress::Unzip
+File::Copy;
 
 
-=head1 DESCRIPTION
+=head1 SYNOPSIS
 
-This module have the scope to manage with Apache2::WURFLFilter module the images for mobile devices. 
+This module have the scope to manage with WURFLFilter.pm module the images for mobile devices. 
 
 For more details: http://www.idelfuschini.it/apache-mobile-filter-v2x.html
 
-NOTE: this software need wurfl.xml you can download it directly from this site: http://wurfl.sourceforge.net or you canset the filter to download it directly.
+An example of how to set the httpd.conf is below:
 
+PerlSetEnv MOBILE_HOME server_root/MobileFilter
+
+#This indicate to the filter where put the transformated images (cache directory) this directory must be writeable
+PerlSetEnv ResizeImageDirectory /transform
+
+PerlModule Apache2::WURFLFilter
+PerlTransHandler +Apache2::WURFLFilter
+
+#This is indicate to the filter were are stored the high definition images
+<Location /mobile/*>
+    SetHandler modperl
+    PerlInputFilterHandler Apache2::ImageRenderFilter 
+</Location> 
+
+
+
+NOTE: this software need wurfl.xml you can download it directly from this site: http://wurfl.sourceforge.net or you can set the filter to download it directly.
+
+=head1 DOCUMENTATION & DEMO
+
+For more details: http://www.idelfuschini.it/apache-mobile-filter-v2x.html
+
+Demo page of the filter: http://apachemobilefilter.nogoogle.it/php_test.php (thanks Ivan alias sigmund)
+
+=head1 AUTHOR
+Idel Fuschini (idel.fuschini [at] gmail [dot] com
 
 =cut

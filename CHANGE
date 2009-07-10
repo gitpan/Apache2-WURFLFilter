@@ -1,3 +1,12 @@
+WURFLFilter 2.04
+Deprecated parameter Log4WurflNoDeviceDetect, the strange parameter is logged into error_log as warning type
+Deprecated parameter DirWebPatch, now if LoadWebPatch is true and PatchWurflNetDownload is false the Apache Mobile FIlter load the web_browsers_patch.xml file into MOBILE_HOME parameter
+Deprecated parameter ConvertImage this parameter has not sense.
+Deprecated parameter WebAppConvertImages this parameter has not sense.
+Deprecated parameter DetectAccuracy this parameter causes the decrease of filter performance.
+Deprecated parameter RedirectTranscoder this parameter has not sense.
+Complete with more info the POD 
+
 WURFLFilter 2.03
 Added Parameter CookieCacheSystem to enable cookie cache mechanism.
 Cache cookie system

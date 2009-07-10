@@ -18,7 +18,6 @@ package Apache2::WURFLFilter;
   use Apache2::SubRequest ();
   use Apache2::Log;
   use Apache2::Filter (); 
-  use Text::LevenshteinXS qw(distance);
   use APR::Table (); 
   use LWP::Simple;
   use Apache2::Const -compile => qw(OK REDIRECT DECLINED);
@@ -31,7 +30,7 @@ package Apache2::WURFLFilter;
   # 
 
   use vars qw($VERSION);
-  $VERSION= "2.03";
+  $VERSION= "2.04";
   my %Capability;
   my %Array_fb;
   my %Array_id;
@@ -56,7 +55,6 @@ package Apache2::WURFLFilter;
   my $convertimage="false";
   my $resizeimagedirectory="";
   my $downloadzipfile="true";
-  my $convertonlyimages="false"; 
   my $repasshanlder=0;
   my $globalpassvariable="";
   my $log4wurfl="";
@@ -66,7 +64,6 @@ package Apache2::WURFLFilter;
   my $patchwurflurl="";
   my $redirecttranscoder="true";
   my $redirecttranscoderurl="none";
-  my $detectaccuracy="false";
   my $listall="false";
   my $cookiecachesystem="false";
   
@@ -116,6 +113,12 @@ sub loadConfigFile {
 				$fullbrowserurl=$ENV{FullBrowserUrl};
 				printLog("FullBrowserUrl is: $fullbrowserurl");
 			 }		
+	      	 if ($ENV{RedirectTranscoderUrl}) {
+				$redirecttranscoderurl=$ENV{RedirectTranscoderUrl};
+				$redirecttranscoder="true";
+				printLog("RedirectTranscoderUrl is: $redirecttranscoderurl");
+			 }	
+	
 	      	 if ($ENV{WurflNetDownload}) {
 				$wurflnetdownload=$ENV{WurflNetDownload};
 				printLog("WurflNetDownload is: $wurflnetdownload");
@@ -127,10 +130,6 @@ sub loadConfigFile {
 	      	 if ($ENV{DownloadZipFile}) {
 				$downloadzipfile=$ENV{DownloadZipFile};
 				printLog("DownloadZipFile is: $downloadzipfile");
-			 }	
-	      	 if ($ENV{Log4WurflNoDeviceDetect}) {
-				$log4wurfl=$ENV{Log4WurflNoDeviceDetect};
-				printLog("Log4WurflNoDeviceDetect is: $log4wurfl");
 			 }	
 	      	 if ($ENV{CapabilityList}) {
 				my @dummycapability = split(/,/, $ENV{CapabilityList});
@@ -159,28 +158,11 @@ sub loadConfigFile {
 				$patchwurflurl=$ENV{PatchWurflUrl};
 				printLog("PatchWurflUrl is: $patchwurflurl");
 			 }	
-	      	 if ($ENV{RedirectTranscoder}) {
-				$redirecttranscoder=$ENV{RedirectTranscoder};
-				printLog("RedirectTranscoder is: $redirecttranscoder");
-			 }	
-	      	 if ($ENV{RedirectTranscoderUrl}) {
-				$redirecttranscoderurl=$ENV{RedirectTranscoderUrl};
-				printLog("RedirectTranscoderUrl is: $redirecttranscoderurl");
-			 }	
-			 if ($ENV{DetectAccuracy}) {
-				$detectaccuracy=$ENV{DetectAccuracy};
-				printLog("DetectAccuracy is: $detectaccuracy");
-			 }	
+
 			 if ($ENV{CookieCacheSystem}) {
 				$cookiecachesystem=$ENV{CookieCacheSystem};
 				printLog("CookieCacheSystem is: $cookiecachesystem");
 			 }	
-
-
-          if ($log4wurfl eq "") {
-   		     printLog("The parameter Log4WurflNoDeviceDetect must be defined into WURFLMobile.config");
-		     ModPerl::Util::exit();
-	      }
 	      
 	    printLog("Finish loading  parameter");
 	    printLog("----------------------------------");
@@ -270,7 +252,7 @@ sub loadConfigFile {
 					$r_id=parseWURFLFile($row,$r_id);
 				}
 	         } else {
-				my $filePatch=$dirwebpatch;
+				my $filePatch="$ENV{MOBILE_HOME}/web_browsers_patch.xml";
 				if (-e "$filePatch") {
 						printLog("Start loading Web Patch File of WURFL");
 						if (open (IN,"$filePatch")) {
@@ -395,22 +377,6 @@ sub printLog {
 	my $data=Data();
 	print "$data - $info\n";
 }
-sub printNotFound {
-	my ($info) = @_;
-	my $data=Data();
-	my $message="nok";
-	if ($info ne $globalpassvariable) {
-		 if (open(LOGFILE, ">>$log4wurfl")){
-		     print LOGFILE "$data - $info\n";
-		  close LOGFILE;
-		  $message="ok";
-		 } 
-    }
-    $globalpassvariable=$info;
-    return $message;
-
-}
-
 sub FallBack {
   my ($idToFind) = @_;
   my $dummy_id;
@@ -461,19 +427,6 @@ sub IdentifyUAMethod {
            $id_find=$Array_id{$dummy};
          }
       }
-  }
-  if ($id_find eq "" && $detectaccuracy eq "true") {    
-			foreach $ua_toMatch (%Array_fullua_id) {
-				$dummy=$UserAgent;
-				$near_toMatch=distance($dummy,$ua_toMatch);     
-				 if ($near_toMatch < $near_toFind) {
-					$near_toFind=$near_toMatch;
-					$id_find=$Array_fullua_id{$ua_toMatch};
-				 }
-			}
-			if ($near_toFind > $precision) {
-					$id_find="";
-			}
   }
   return $id_find;
 }
@@ -570,6 +523,7 @@ sub handler {
       my %ArrayQuery;
       my $var;
       
+      ## uncomment this code for pass the useragent in query string (JUST for demo)
 	  #if ($query_string) {
 	  #		  my @vars = split(/&/, $query_string); 	  
 	  #		  foreach $var (sort @vars){
@@ -676,9 +630,6 @@ sub handler {
 	      	     # unknown device 
 	      	     #
 	 			 $variabile="device=false";            
-				 if (printNotFound("$user_agent") eq "nok") {
-			  		$f->log->warn("Can't open:$log4wurfl");
-				 }
 				 $f->log->warn("Device not found:$user_agent");
 				 $ArrayCapFound{'device_claims_web_support'}= 'true';
 				 $ArrayCapFound{'is_wireless_device'}='false';				
@@ -731,22 +682,85 @@ sub handler {
   1; 
 =head1 NAME
 
-Apache2::WURFLFilter - is a Apache Mobile Filter that give any information about the capabilities of the devices as environment variable
+Apache2::WURFLFilter - The module detects the mobile device and passes the WURFL capabilities on to the other web application as environment variables
 
 
 =head1 COREQUISITES
 
 CGI
 Apache2
-Text::LevenshteinXS
 
-=head1 DESCRIPTION
+=head1 SYNOPSIS
+The configuration of V2.x of "Apache Mobile Filter" is very simple thane V1.x, I have deprecated the intelliswitch method because I think that the filter is faster.
 
-The module detects the mobile device and passes the WURFL capabilities on to the other web application as environment variables. It can also be used to resize images on the fly to adapt to the screen size of the mobile device.
+Add this parameter into httpd.conf file
 
-For more details: http://www.idelfuschini.it/it/apache-mobile-filter-v2x.html
+PerlSetEnv CapabilityList max_image_width,j2me_midp_2_0 *
+PerlSetEnv MobileVersionUrl /cgi-bin/perl.html ** (default is "none" that mean the filter pass through)
+PerlSetEnv FullBrowserUrl http://www.google.com ** (default is "none" that mean the filter pass through)
+PerlSetEnv WurflNetDownload true***
+PerlSetEnv DownloadWurflURL http://downloads.sourceforge.net/wurfl/wurfl-latest.zip****
+PerlSetEnv DownloadZipFile false
+PerlSetEnv ResizeImageDirectory /transform
+PerlSetEnv Log4WurflNoDeviceDetect /apache2_dev/WurflLog/DeviceNotFound.log
+PerlSetEnv LoadWebPatch true
+PerlSetEnv DirWebPatch /apache2_dev/Apache2/web_browsers_patch.xml   
+PerlSetEnv PatchWurflNetDownload true
+PerlSetEnv PatchWurflUrl http://wurfl.sourceforge.net/web_browsers_patch.xml
+PerlSetEnv RedirectTranscoder true
+PerlSetEnv RedirectTranscoderUrl /transcoderpage.html (default is "none" that mean the filter pass through)
+PerlSetEnv CookieCacheSystem true (default is false, but for production mode is suggested to set in true) 
 
-NOTE: this software need wurfl.xml you can download it directly from this site: http://wurfl.sourceforge.net or you canset the filter to download it directly.
+PerlModule Apache2::WURFLFilter
+PerlTransHandler +Apache2::WURFLFilter
+
+* the field separator of each capability you want to consider in your mobile site is ",". Important you now can set ALL (default value) if you want that the filter managed all wurfl capabilities
+
+**if you put a relative url (for example "/path") the filter done an internal redirect, if you put a url redirect with protocol (for example "http:") the filter done a classic redirect
+
+***if this parameter is fault the filter try to read  the wurfl.xml file from MOBILE_HOME path
+
+***if you want to download directly the last version of WURFL.xml you can set the url parameter to http://downloads.sourceforge.net/wurfl/wurfl-latest.zip
+
+****if you put to true value you can detect a little bit more device, but for strange UA the method take  a lot of time 
+
+ 
+
+For this configuration you need to set this parameter
+=over 4
+
+=item * ConvertImage (boolean): activate/deactivate the adaptation of images to the device
+=item * ResizeImageDirectory: where the new images are saved for cache system, remember this directory must be into docroot directory and also must be writeble from the server
+=item * WurflNetDownload (boolean): if you want to download WURFL xml directly from WURFL site or from an intranet URL (good to have only single point of Wurfl access), default is set to false
+=item * DownloadZipFile (boolean): if you want to download a zip file of WURFL
+=item * DownloadWurflURL: the url of WURFL DB to download**
+=item * CapabilityList/capability : is the capability value you want to pass to you site
+=item * MobileVersionUrl: is the URL address of mobile version site *
+=item * FullBrowserUrl: is the URL address of PC version site *
+=item * RedirectTranscoderURL: the URL where you want to redirect the transcoder*
+=item * ConvertOnlyImages (boolean): if you want to use the filter only for the images and not for other content
+=item * Log4WurflNoDeviceDetect: it's a necessary log for detect new device that WURFL not has included
+=item * LoadWebPatch (boolean): if you want to use a wurfl patch file
+=item * DirWebPatch: set it for indicate where is the patch file on your server
+=item * PatchWurflNetDownload(boolean): if you want download the patch file
+=item * PatchWurflUrl: the URL of the patch file (is readed ony if PatchWurflNet is setted with true)
+=item * DetectAccuracy: if you want to detect with more precision the devices (default is false), I suggest if it's not necessary to leave at false 
+
+=back
 
 
+*if you put a relative url (for example "/path") the filter done an internal redirect, if you put a url redirect with protocol (for example "http:") the filter done a classic redirect. If the parameter is not set the filter is a passthrough 
+
+**if you want to download directly the last version of WURFL.xml you can set the url parameter to http://downloads.sourceforge.net/wurfl/wurfl-latest.zip
+
+*** for more info about transcoder problem go to http://wurfl.sourceforge.net
+
+=head1 DOCUMENTATION & DEMO
+
+For more details: http://www.idelfuschini.it/apache-mobile-filter-v2x.html
+
+Demo page of the filter: http://apachemobilefilter.nogoogle.it/php_test.php (thanks Ivan alias sigmund)
+
+=head1 AUTHOR
+Idel Fuschini (idel.fuschini [at] gmail [dot] com
 =cut
