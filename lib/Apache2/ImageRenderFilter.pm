@@ -31,7 +31,7 @@ package Apache2::ImageRenderFilter;
   # 
 
   use vars qw($VERSION);
-  $VERSION= "2.04b";
+  $VERSION= "2.05";
   my %Capability;
   my %Array_fb;
   my %Array_id;
@@ -159,7 +159,7 @@ sub handler    {
       my $location;
       my $width_toSearch;
       my $type_redirect="internal";
-      my $return_value;
+      my $return_value=Apache2::Const::DECLINED;
 	  my $dummy="";
 	  my $variabile2="";
 	  my %ArrayCapFound;
@@ -171,6 +171,7 @@ sub handler    {
       my $width=1000;
       my $height=1000;
       my $image2="";
+      
       if ($f->r->pnotes('width')) {      
       	$width=$f->r->pnotes('width')
       }
@@ -330,9 +331,12 @@ NOTE: this software need wurfl.xml you can download it directly from this site: 
 
 For more details: http://www.idelfuschini.it/apache-mobile-filter-v2x.html
 
+Mobile Demo page of the filter: http://apachemobilefilter.nogoogle.it (thanks Ivan alias sigmund)
+
 Demo page of the filter: http://apachemobilefilter.nogoogle.it/php_test.php (thanks Ivan alias sigmund)
 
 =head1 AUTHOR
 
-Idel Fuschini (idel.fuschini [at] gmail [dot] com
+Idel Fuschini (idel.fuschini [at] gmail [dot] com)
 
+=cut

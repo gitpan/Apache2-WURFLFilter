@@ -1,7 +1,6 @@
 .DS_Store
 lib/Apache2/WURFLFilter.pm
 lib/Apache2/ImageRenderFilter.pm
-lib/Apache2/DeviceDetectLogic.pm
 Makefile.PL
 MANIFEST
 CHANGE

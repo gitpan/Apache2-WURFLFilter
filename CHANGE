@@ -1,3 +1,10 @@
+WURFLFilter 2.05
+WURFLFIlter parameter DownloadZipFile now the Apache Mobile Filter detect automaticaly the file to download is a zip file.
+Add Environment variable AMF_WURFLVER to know which version of WURFL the filter use.
+Optimize the downloading phases of wurfl files.
+ImageRenderFilter fixed bugs
+
+
 WURFLFilter 2.04
 Deprecated parameter Log4WurflNoDeviceDetect, the strange parameter is logged into error_log as warning type
 Deprecated parameter DirWebPatch, now if LoadWebPatch is true and PatchWurflNetDownload is false the Apache Mobile FIlter load the web_browsers_patch.xml file into MOBILE_HOME parameter

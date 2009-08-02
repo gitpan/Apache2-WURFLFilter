@@ -30,7 +30,7 @@ package Apache2::WURFLFilter;
   # 
 
   use vars qw($VERSION);
-  $VERSION= "2.04b";
+  $VERSION= "2.05";
   my %Capability;
   my %Array_fb;
   my %Array_id;
@@ -54,18 +54,17 @@ package Apache2::WURFLFilter;
   my $downloadwurflurl="false";
   my $convertimage="false";
   my $resizeimagedirectory="";
-  my $downloadzipfile="true";
   my $repasshanlder=0;
   my $globalpassvariable="";
   my $log4wurfl="";
   my $loadwebpatch="false";
-  my $dirwebpatch="";
   my $patchwurflnetdownload="false"; 
   my $patchwurflurl="";
   my $redirecttranscoder="true";
   my $redirecttranscoderurl="none";
   my $listall="false";
   my $cookiecachesystem="false";
+  my $WURFLVersion="unknown";
   
   $ImageType{'png'}="png";
   $ImageType{'gif'}="gif";
@@ -127,10 +126,6 @@ sub loadConfigFile {
 				$downloadwurflurl=$ENV{DownloadWurflURL};
 				printLog("DownloadWurflURL is: $downloadwurflurl");
 			 }	
-	      	 if ($ENV{DownloadZipFile}) {
-				$downloadzipfile=$ENV{DownloadZipFile};
-				printLog("DownloadZipFile is: $downloadzipfile");
-			 }	
 	      	 if ($ENV{CapabilityList}) {
 				my @dummycapability = split(/,/, $ENV{CapabilityList});
 				foreach $dummy (@dummycapability) {
@@ -145,10 +140,6 @@ sub loadConfigFile {
 	      	 if ($ENV{LoadWebPatch}) {
 				$loadwebpatch=$ENV{LoadWebPatch};
 				printLog("LoadWebPatch is: $loadwebpatch");
-			 }	
-	      	 if ($ENV{DirWebPatch}) {
-				$dirwebpatch=$ENV{DirWebPatch};
-				printLog("DirWebpatch is: $dirwebpatch");
 			 }	
 	      	 if ($ENV{PatchWurflNetDownload}) {
 				$patchwurflnetdownload=$ENV{PatchWurflNetDownload};
@@ -167,33 +158,27 @@ sub loadConfigFile {
 	    printLog("Finish loading  parameter");
 	    printLog("----------------------------------");
 	    if ($wurflnetdownload eq "true") {
-	        printLog("Start downloading  WURFL.xml from $downloadwurflurl");
-	        my $content = get ($downloadwurflurl);
-	        printLog("Finish downloading  WURFL.xml");
-	        if ($content eq "") {
+	        printLog("Start process downloading  WURFL.xml from $downloadwurflurl");
+	        my $data = Data();
+	        printLog ("Test the  URL");
+	        my ($content_type, $document_length, $modified_time, $expires, $server) = head($downloadwurflurl);
+	        if ($content_type eq "") {
    		        printLog("Couldn't get $downloadwurflurl.");
 		   		ModPerl::Util::exit();
+	        } else {
+	            printLog("The URL is correct");
+	            printLog("The size of document wurf file: $document_length bytes");	       
 	        }
 	        
-	        if ($downloadzipfile eq 'true') {
-	              printLog("Uncompress File start");
+	        if ($content_type eq 'application/zip') {
+	              printLog("The file is a zip file.");
+	              printLog ("Start downloading");
 				  my @dummypairs = split(/\//, $downloadwurflurl);
 				  my ($ext_zip) = $downloadwurflurl =~ /\.(\w+)$/;
 				  my $filezip=$dummypairs[-1];
 				  my $tmp_dir=$ENV{MOBILE_HOME};
 				  $filezip="$tmp_dir/$filezip";
-				  if ($ext_zip eq 'zip') {
-					  if (open(FH, ">$filezip")) {
-						  print FH $content;
-					  close FH;
-					  } else {
-					      ModPerl::Util::exit();
-					      printLog("Error open file:$filezip");
-					  }
-				  } else {
-					  printLog ("The file compress you try to download it's not a zip format");
-					  ModPerl::Util::exit();
-				  }
+				  my $status = getstore ($downloadwurflurl,$filezip);
 				  my $output="$tmp_dir/tmp_wurfl.xml";
 				  unzip $filezip => $output 
 						or die "unzip failed: $UnzipError\n";
@@ -207,6 +192,8 @@ sub loadConfigFile {
 					     ModPerl::Util::exit();
 					}
 			} else {
+				printLog("The file is a xml file.");
+			    my $content = get ($downloadwurflurl);
 				my @rows = split(/\n/, $content);
 				my $row;
 				my $count=0;
@@ -214,6 +201,8 @@ sub loadConfigFile {
 					$r_id=parseWURFLFile($row,$r_id);
 				}
 			}
+			printLog("Finish downloading WURFL from $downloadwurflurl");
+
 	    } else {
 			if (-e "$fileWurfl") {
 					printLog("Start loading  WURFL.xml");
@@ -238,7 +227,15 @@ sub loadConfigFile {
 		#
 		if ($loadwebpatch eq 'true') {
 			if ($patchwurflnetdownload eq "true") {
-				printLog("Start downloading patch WURFL.xml from $patchwurflurl");
+				printLog("Start downloading patch WURFL from $patchwurflurl");
+			    my ($content_type, $document_length, $modified_time, $expires, $server) = head($patchwurflurl);
+		        if ($content_type eq "") {
+	   		        printLog("Couldn't get $patchwurflurl.");
+			   		ModPerl::Util::exit();
+		        } else {
+		            printLog("The URL for download patch WURFL is correct");
+		            printLog("The size of document is: $document_length bytes");	       
+		        }
 				my $content = get ($patchwurflurl);
 				printLog("Finish downloading  WURFL.xml");
 				if ($content eq "") {
@@ -278,7 +275,8 @@ sub loadConfigFile {
 		     printLog("Control also if the file is compress file, and DownloadZipFile parameter is seted false");
 		     ModPerl::Util::exit();
 		}
-        printLog("This version of WURFL have $arrLen UserAgent");
+        printLog("WURFL version: $WURFLVersion");
+        printLog("This version of WURFL has $arrLen UserAgent");
         printLog("End loading  WURFL.xml");
 }
 sub parseWURFLFile {
@@ -328,6 +326,9 @@ sub parseWURFLFile {
 			if (($id) && ($Capability{$name}) && ($name) && ($value)) {			   
 			   $Array_DDRcapability{"$val|$name"}=$value;
 			}
+		 }
+		 if ($record =~ /\<ver/o) {
+		     $WURFLVersion=extValueTag("ver",$record);
 		 }
 		 return $id;
 
@@ -524,23 +525,23 @@ sub handler {
       my $var;
       
       ## uncomment this code for pass the useragent in query string (JUST for demo)
-	  #if ($query_string) {
-	  #		  my @vars = split(/&/, $query_string); 	  
-	  #		  foreach $var (sort @vars){
-	  #				   if ($var) {
-	  #						my ($v,$i) = split(/=/, $var);
-	  #						$v =~ tr/+/ /;
-	  #						$v =~ s/%([a-fA-F0-9][a-fA-F0-9])/pack("C", hex($1))/eg;
-	  #						$i =~ tr/+/ /;
-	  #						$i =~ s/%([a-fA-F0-9][a-fA-F0-9])/pack("C", hex($1))/eg;
-	  #						$i =~ s/<!--(.|\n)*-->//g;
-	  #						$ArrayQuery{$v}=$i;
-	  #					}
-	  #		  }
-	  # }
-	  #	  if ($ArrayQuery{amf}) {
-	  #				$user_agent=$ArrayQuery{amf};
-	  #	  }
+	  if ($query_string) {
+	  		  my @vars = split(/&/, $query_string); 	  
+	  		  foreach $var (sort @vars){
+	  				   if ($var) {
+	  						my ($v,$i) = split(/=/, $var);
+	  					$v =~ tr/+/ /;
+	  					$v =~ s/%([a-fA-F0-9][a-fA-F0-9])/pack("C", hex($1))/eg;
+	  						$i =~ tr/+/ /;
+	  						$i =~ s/%([a-fA-F0-9][a-fA-F0-9])/pack("C", hex($1))/eg;
+	  						$i =~ s/<!--(.|\n)*-->//g;
+	  						$ArrayQuery{$v}=$i;
+	  					}
+	  		  }
+	   }
+	  	  if ($ArrayQuery{amf}) {
+	  				$user_agent=$ArrayQuery{amf};
+	  	  }
 		  
 	
 	
@@ -671,6 +672,8 @@ sub handler {
 					   }
 		} else {
 		 $f->subprocess_env("AMF_VER" => $VERSION);
+		 $f->subprocess_env("AMF_WURFLVER" => $WURFLVersion);
+		 
 		 $return_value=Apache2::Const::DECLINED;
 		}
 
@@ -707,8 +710,6 @@ Add this parameter into httpd.conf file:
 =item C<PerlSetEnv ResizeImageDirectory /transform>
 
 =item C<PerlSetEnv LoadWebPatch true>
-
-=item C<PerlSetEnv DirWebPatch /apache2_dev/Apache2/web_browsers_patch.xml>   
 
 =item C<PerlSetEnv PatchWurflNetDownload true>
 
@@ -749,8 +750,6 @@ For this configuration you need to set this parameter
 
 =item C<WurflNetDownload> (boolean): if you want to download WURFL xml directly from WURFL site or from an intranet URL (good to have only single point of Wurfl access), default is set to false
 
-=item C<DownloadZipFile> (boolean): if you want to download a zip file of WURFL
-
 =item C<DownloadWurflURL>: the url of WURFL DB to download**
 
 =item C<CapabilityList> : is the capability value you want to pass to you site
@@ -766,8 +765,6 @@ For this configuration you need to set this parameter
 =item C<Log4WurflNoDeviceDetect>: it's a necessary log for detect new device that WURFL not has included
 
 =item C<LoadWebPatch> (boolean): if you want to use a wurfl patch file
-
-=item C<DirWebPatch>: set it for indicate where is the patch file on your server
 
 =item C<PatchWurflNetDownload>(boolean): if you want download the patch file
 
@@ -787,10 +784,12 @@ For this configuration you need to set this parameter
 
 For more details: http://www.idelfuschini.it/apache-mobile-filter-v2x.html
 
+Mobile Demo page of the filter: http://apachemobilefilter.nogoogle.it (thanks Ivan alias sigmund)
+
 Demo page of the filter: http://apachemobilefilter.nogoogle.it/php_test.php (thanks Ivan alias sigmund)
 
 =head1 AUTHOR
 
-Idel Fuschini (idel.fuschini [at] gmail [dot] com
+Idel Fuschini (idel.fuschini [at] gmail [dot] com)
 
 =cut
