@@ -24,7 +24,6 @@ Apache2::RequestUtil
 Apache2::SubRequest
 Apache2::Log
 CGI::Cookie
-Text::LevenshteinXS
 APR::Table
 LWP::Simple
 Image::Resize
@@ -52,25 +51,19 @@ Now you can start to install my package:
 
 3) open the file conf/httpd.conf and add this few commands:
 
-PerlSetEnv WurflNetDownload true
-PerlSetEnv DownloadWurflURL http://downloads.sourceforge.net/wurfl/wurfl-latest.zip***
-PerlSetEnv DownloadZipFile false
-PerlSetEnv ConvertImage true
-PerlSetEnv ResizeImageDirectory /transform
-PerlSetEnv ConvertOnlyImages false
-PerlSetEnv Log4WurflNoDeviceDetect /apache2_dev/WurflLog/DeviceNotFound.log
-PerlSetEnv LoadWebPatch true
-PerlSetEnv DirWebPatch /apache2_dev/Apache2/web_browsers_patch.xml   
-PerlSetEnv PatchWurflNetDownload true
-PerlSetEnv PatchWurflUrl http://wurfl.sourceforge.net/web_browsers_patch.xml
-PerlSetEnv RedirectTranscoder true
-PerlSetEnv RedirectTranscoderUrl /transcoderpage.html (default is "none" that mean the filter pass through)
-
+#
+#Apache Mobile Filter parameter
+# 
+PerlSetEnv MOBILE_HOME <home path of AMF>
+#
+#configure to activate Apache Mobile filter  
+# 
 PerlModule Apache2::WURFLFilter
 PerlTransHandler +Apache2::WURFLFilter
-
+PerlSetEnv ResizeImageDirectory /transform
+# This is indicate to the filter were are stored the high definition images
 <Location /mobile/*>
-	SetHandler modperl
+    SetHandler modperl
     PerlInputFilterHandler Apache2::ImageRenderFilter 
 </Location> 
 

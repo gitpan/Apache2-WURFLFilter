@@ -30,7 +30,7 @@ package Apache2::WURFLFilter;
   # 
 
   use vars qw($VERSION);
-  $VERSION= "2.05";
+  $VERSION= "2.06";
   my %Capability;
   my %Array_fb;
   my %Array_id;
@@ -79,6 +79,7 @@ package Apache2::WURFLFilter;
   $Capability{'xhtml_support_level'}="xhtml_support_level";
   $Capability{'html_wi_imode_ compact_generic'}="html_wi_imode_ compact_generic";
   $Capability{'is_transcoder'}="is_transcoder";
+  $cacheArray2{'device_not_found'}="id=device_not_found&device=false&device_claims_web_support=true&is_wireless_device=false";
   
   #
   # Check if MOBILE_HOME is setting in apache httpd.conf file for example:
@@ -503,6 +504,7 @@ sub handler {
       my $capability2;
       my $variabile="";
       my $user_agent=$f->headers_in->{'User-Agent'}|| '';
+      my $x_user_agent=$f->headers_in->{'X-Device-User-Agent'}|| '';
       my $query_string=$f->args;
       my $uri = $f->uri();
       my ($content_type) = $uri =~ /\.(\w+)$/;
@@ -523,7 +525,10 @@ sub handler {
 	  $ArrayCapFound{is_transcoder}='false';
       my %ArrayQuery;
       my $var;
-      
+      if ($x_user_agent) {
+         $f->log->warn("Warn probably transcoder: $x_user_agent");
+         $user_agent=$x_user_agent;
+      }
       ## uncomment this code for pass the useragent in query string (JUST for demo)
 	  if ($query_string) {
 	  		  my @vars = split(/&/, $query_string); 	  
@@ -630,12 +635,11 @@ sub handler {
 	      	     #
 	      	     # unknown device 
 	      	     #
-	 			 $variabile="device=false";            
 				 $f->log->warn("Device not found:$user_agent");
-				 $ArrayCapFound{'device_claims_web_support'}= 'true';
-				 $ArrayCapFound{'is_wireless_device'}='false';				
-				 $cacheArray2{$user_agent}="$variabile&device_claims_web_support=true&is_wireless_device=false";
 				 $cacheArray{$user_agent}="device_not_found";
+				 if ($cookiecachesystem eq "true") {
+							$f->err_headers_out->set('Set-Cookie' => "amf=device_not_found; path=/;");	
+				  }		  			  
 				 $method="";     	 
 	      	  }
       }		
@@ -697,9 +701,6 @@ Add this parameter into httpd.conf file:
 
 =item C<PerlSetEnv CapabilityList max_image_width,j2me_midp_2_0> *
 
-=item C<PerlSetEnv MobileVersionUrl /cgi-bin/perl.html> ** (default is "none" that mean the filter pass through)
-
-=item C<PerlSetEnv FullBrowserUrl http://www.google.com> ** (default is "none" that mean the filter pass through)
 
 =item C<PerlSetEnv WurflNetDownload true>***
 
@@ -715,7 +716,9 @@ Add this parameter into httpd.conf file:
 
 =item C<PerlSetEnv PatchWurflUrl http://wurfl.sourceforge.net/web_browsers_patch.xml>
 
-=item C<PerlSetEnv RedirectTranscoder true>
+=item C<PerlSetEnv MobileVersionUrl /cgi-bin/perl.html> ** (default is "none" that mean the filter pass through)
+
+=item C<PerlSetEnv FullBrowserUrl http://www.google.com> ** (default is "none" that mean the filter pass through)
 
 =item C<PerlSetEnv RedirectTranscoderUrl /transcoderpage.html> (default is "none" that mean the filter pass through)
 

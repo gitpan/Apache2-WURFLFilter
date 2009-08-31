@@ -31,7 +31,7 @@ package Apache2::ImageRenderFilter;
   # 
 
   use vars qw($VERSION);
-  $VERSION= "2.05";
+  $VERSION= "2.06";
   my %Capability;
   my %Array_fb;
   my %Array_id;
@@ -43,7 +43,6 @@ package Apache2::ImageRenderFilter;
   my %CHTMLUrl;
   my %ImageType;
   my %cacheArray;
-  my %cacheArray2;
   my %cacheArray_toview;
   
 
