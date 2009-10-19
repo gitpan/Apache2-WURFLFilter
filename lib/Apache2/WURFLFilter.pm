@@ -3,7 +3,7 @@
 
 #
 # Created by Idel Fuschini 
-# Date: 01/07/09
+# Date: 18/10/09
 # Site: http://www.idelfuschini.it
 # Mail: idel.fuschini@gmail.com
 
@@ -30,20 +30,15 @@ package Apache2::WURFLFilter;
   # 
 
   use vars qw($VERSION);
-  $VERSION= "2.06";
+  $VERSION= "2.07";
   my %Capability;
   my %Array_fb;
   my %Array_id;
   my %Array_fullua_id;
   my %Array_DDRcapability;
 
-  my %XHTMLUrl;
-  my %WMLUrl;
-  my %CHTMLUrl;
-  my %cacheArray;
-  my %cacheArray2;
-  my %cacheArray_toview;
-  my %ImageType;
+  my %Cache_ua;
+  my %Cache_id;
   
 
   my $mobileversionurl="none";
@@ -52,11 +47,6 @@ package Apache2::WURFLFilter;
   my $showdefaultvariable="false";
   my $wurflnetdownload="false";
   my $downloadwurflurl="false";
-  my $convertimage="false";
-  my $resizeimagedirectory="";
-  my $repasshanlder=0;
-  my $globalpassvariable="";
-  my $log4wurfl="";
   my $loadwebpatch="false";
   my $patchwurflnetdownload="false"; 
   my $patchwurflurl="";
@@ -64,13 +54,8 @@ package Apache2::WURFLFilter;
   my $redirecttranscoderurl="none";
   my $listall="false";
   my $cookiecachesystem="false";
-  my $WURFLVersion="unknown";
-  
-  $ImageType{'png'}="png";
-  $ImageType{'gif'}="gif";
-  $ImageType{'jpg'}="jpg";
-  $ImageType{'jpeg'}="jpeg";
-
+  my $WURFLVersion="unknown";  
+  print "provao\n";
   $Capability{'resolution_width'}="resolution_width";  
   $Capability{'max_image_width'}="max_image_width";
   $Capability{'max_image_height'}="max_image_width";  
@@ -79,7 +64,7 @@ package Apache2::WURFLFilter;
   $Capability{'xhtml_support_level'}="xhtml_support_level";
   $Capability{'html_wi_imode_ compact_generic'}="html_wi_imode_ compact_generic";
   $Capability{'is_transcoder'}="is_transcoder";
-  $cacheArray2{'device_not_found'}="id=device_not_found&device=false&device_claims_web_support=true&is_wireless_device=false";
+  $Cache_id{'device_not_found'}="id=device_not_found&device=false&device_claims_web_support=true&is_wireless_device=false";
   
   #
   # Check if MOBILE_HOME is setting in apache httpd.conf file for example:
@@ -95,11 +80,11 @@ package Apache2::WURFLFilter;
   }
 
 sub loadConfigFile {
-	     my ($fileWurfl) = @_;
-		 my $null="";
-		 my $null2="";
-		 my $null3="";
-         my $val;
+	my ($fileWurfl) = @_;
+	my $null="";
+	my $null2="";
+	my $null3="";  
+	my $val;
 	     my $capability;
 	     my $r_id;
 	     my $dummy;
@@ -155,7 +140,6 @@ sub loadConfigFile {
 				$cookiecachesystem=$ENV{CookieCacheSystem};
 				printLog("CookieCacheSystem is: $cookiecachesystem");
 			 }	
-	      
 	    printLog("Finish loading  parameter");
 	    printLog("----------------------------------");
 	    if ($wurflnetdownload eq "true") {
@@ -555,16 +539,16 @@ sub handler {
 	  }
       my $cookie = $f->headers_in->{Cookie} || '';
       $id=readCookie($cookie);
-      if ($cacheArray{$user_agent}) {
+      if ($Cache_ua{$user_agent}) {
           #
           # cookie is not empty so I try to read in memory cache on my httpd cache
           #
-          $id=$cacheArray{$user_agent};
-          if ($cacheArray2{$id}) {
+          $id=$Cache_ua{$user_agent};
+          if ($Cache_id{$id}) {
 				#
 				# I'm here only for old device
 				#
-				my @pairs = split(/&/, $cacheArray2{$id});
+				my @pairs = split(/&/, $Cache_id{$id});
 				my $param_tofound;
 				my $string_tofound;
 				foreach $param_tofound (@pairs) {      	       
@@ -582,18 +566,18 @@ sub handler {
 				  if ($user_agent) {
 							$id=IdentifyUAMethod($user_agent,2);
 							$method="IdentifyUAMethod($id),$user_agent";
-							$cacheArray{$user_agent}=$id;
+							$Cache_ua{$user_agent}=$id;
 				  }
               }                        
 		      if ($id ne "") {
 		          #
 		          # cookie is not empty so I try to read in memory cache on my httpd cache
 		          #
-		          if ($cacheArray2{$id}) {
+		          if ($Cache_id{$id}) {
 						#
 						# I'm here only for old device looking in cache
 						#
-						my @pairs = split(/&/, $cacheArray2{$id});
+						my @pairs = split(/&/, $Cache_id{$id});
 						my $param_tofound;
 						my $string_tofound;
 						foreach $param_tofound (@pairs) {      	       
@@ -624,8 +608,8 @@ sub handler {
 						$f->pnotes('width' => $ArrayCapFound{max_image_width}); 
 						$f->pnotes('height' => $ArrayCapFound{max_image_height});
 						$f->subprocess_env("AMF_ID" => $id);
-						$cacheArray2{$id}=$variabile2;
-						$cacheArray{$user_agent}=$id;
+						$Cache_id{$id}=$variabile2;
+						$Cache_ua{$user_agent}=$id;
 						if ($cookiecachesystem eq "true") {
 							$f->err_headers_out->set('Set-Cookie' => "amf=$id; path=/;");	
 						}		  			  
@@ -636,7 +620,7 @@ sub handler {
 	      	     # unknown device 
 	      	     #
 				 $f->log->warn("Device not found:$user_agent");
-				 $cacheArray{$user_agent}="device_not_found";
+				 $Cache_ua{$user_agent}="device_not_found";
 				 if ($cookiecachesystem eq "true") {
 							$f->err_headers_out->set('Set-Cookie' => "amf=device_not_found; path=/;");	
 				  }		  			  
@@ -763,17 +747,11 @@ For this configuration you need to set this parameter
 
 =item C<RedirectTranscoderURL>: the URL where you want to redirect the transcoder*
 
-=item C<ConvertOnlyImages> (boolean): if you want to use the filter only for the images and not for other content
-
-=item C<Log4WurflNoDeviceDetect>: it's a necessary log for detect new device that WURFL not has included
-
 =item C<LoadWebPatch> (boolean): if you want to use a wurfl patch file
 
 =item C<PatchWurflNetDownload>(boolean): if you want download the patch file
 
 =item C<PatchWurflUrl>: the URL of the patch file (is readed ony if PatchWurflNet is setted with true)
-
-=item C<DetectAccuracy>: if you want to detect with more precision the devices (default is false), I suggest if it's not necessary to leave at false 
 
 =back
 

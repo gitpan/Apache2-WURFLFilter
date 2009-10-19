@@ -1,3 +1,6 @@
+WURFLFilter 2.07
+Clear code
+
 WURFLFilter 2.06
 Fixed Bugs for caching system thanks to nobbynobbs 
 For the uknown devices now the AMF_ID return "device_not_found" value (before was null)

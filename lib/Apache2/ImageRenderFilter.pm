@@ -31,7 +31,7 @@ package Apache2::ImageRenderFilter;
   # 
 
   use vars qw($VERSION);
-  $VERSION= "2.06";
+  $VERSION= "2.07";
   my %Capability;
   my %Array_fb;
   my %Array_id;
@@ -131,7 +131,7 @@ sub loadConfigFile {
 	     my $r_id;
 	     my $dummy;
 	      	#The filter
-	      	printLog("Start read configuration from httpd.conf");
+	      	printLog("ResizeImageDirectory: Start read configuration from httpd.conf");
 	      	 if ($ENV{ResizeImageDirectory}) {
 				$resizeimagedirectory=$ENV{ResizeImageDirectory};
 				printLog("ResizeImageDirectory is: $resizeimagedirectory");
