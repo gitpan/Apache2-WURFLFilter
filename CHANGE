@@ -1,3 +1,9 @@
+WURFLFilter 2.1
+Added Parameter CacheDirectoryStore to set the directory where the data are stored.
+The Cache system use the Cache::FileBackend library, now the capabilities of device data are stored on filesystem. So if the version of WURFL or CapabilityList are not changed at startup Apache don't lost the data stored.
+Fixed Bugs (thanks to Eladio)
+Clear code
+
 WURFLFilter 2.07
 Clear code
 

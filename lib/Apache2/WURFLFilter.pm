@@ -3,7 +3,7 @@
 
 #
 # Created by Idel Fuschini 
-# Date: 18/10/09
+# Date: 04/11/09
 # Site: http://www.idelfuschini.it
 # Mail: idel.fuschini@gmail.com
 
@@ -24,21 +24,20 @@ package Apache2::WURFLFilter;
   use IO::Uncompress::Unzip qw(unzip $UnzipError) ;
   use File::Copy;
   use constant BUFF_LEN => 1024;
+  use Cache::FileBackend;
+
 
   #
   # Define the global environment
   # 
 
   use vars qw($VERSION);
-  $VERSION= "2.07";
+  $VERSION= "2.1";
   my %Capability;
   my %Array_fb;
   my %Array_id;
   my %Array_fullua_id;
   my %Array_DDRcapability;
-
-  my %Cache_ua;
-  my %Cache_id;
   
 
   my $mobileversionurl="none";
@@ -55,7 +54,8 @@ package Apache2::WURFLFilter;
   my $listall="false";
   my $cookiecachesystem="false";
   my $WURFLVersion="unknown";  
-  print "provao\n";
+  my $cachedirectorystore="/tmp";
+  
   $Capability{'resolution_width'}="resolution_width";  
   $Capability{'max_image_width'}="max_image_width";
   $Capability{'max_image_height'}="max_image_width";  
@@ -63,21 +63,37 @@ package Apache2::WURFLFilter;
   $Capability{'device_claims_web_support'}="device_claims_web_support";
   $Capability{'xhtml_support_level'}="xhtml_support_level";
   $Capability{'html_wi_imode_ compact_generic'}="html_wi_imode_ compact_generic";
-  $Capability{'is_transcoder'}="is_transcoder";
-  $Cache_id{'device_not_found'}="id=device_not_found&device=false&device_claims_web_support=true&is_wireless_device=false";
-  
+  $Capability{'is_transcoder'}="is_transcoder";  
   #
-  # Check if MOBILE_HOME is setting in apache httpd.conf file for example:
+  # Check if MOBILE_HOME and CacheDirectoryStore is setting in apache httpd.conf file for example:
   # PerlSetEnv MOBILE_HOME <apache_directory>/MobileFilter
   #
-   
-  printLog("WURFLFilter Version $VERSION");
+  if ($ENV{CacheDirectoryStore}) {
+	$cachedirectorystore=$ENV{CacheDirectoryStore};
+	printLog("CacheDirectoryStore is: $cachedirectorystore");
+  } else {
+	  printLog("CacheDirectoryStore not exist.	Please set the variable CacheDirectoryStore into httpd.conf, (the directory must be writeable)");
+	  ModPerl::Util::exit();      
+  }   
+  #
+  # Define the cache system directory
+  #
+  my $cacheSystem = new Cache::FileBackend( $cachedirectorystore, 3, 000 );
+  $cacheSystem->store( 'wurfl-id', 'device_not_found', "id=device_not_found&device=false&device_claims_web_support=true&is_wireless_device=false");
+  if ($cacheSystem->restore('wurfl-conf','ver')) {
+  } else {
+            printLog('Create new wurf-con store');
+      	    $cacheSystem->store('wurfl-conf', 'ver', 'null');
+	        $cacheSystem->store('wurfl-conf', 'caplist', 'null');
+	        $cacheSystem->store('wurfl-conf', 'listall', 'null');
+  }
   if ($ENV{MOBILE_HOME}) {
 	  &loadConfigFile("$ENV{MOBILE_HOME}/wurfl.xml");
   } else {
 	  printLog("MOBILE_HOME not exist.	Please set the variable MOBILE_HOME into httpd.conf");
 	  ModPerl::Util::exit();
   }
+  
 
 sub loadConfigFile {
 	my ($fileWurfl) = @_;
@@ -119,7 +135,7 @@ sub loadConfigFile {
 				         $listall="true";
 				      }
 				      $Capability{$dummy}=$dummy;
-				      printLog("Capability is: $dummy");
+				      printLog("CapabilityList is: $dummy");
 				}
 			 }	
 	             
@@ -140,6 +156,8 @@ sub loadConfigFile {
 				$cookiecachesystem=$ENV{CookieCacheSystem};
 				printLog("CookieCacheSystem is: $cookiecachesystem");
 			 }	
+	
+
 	    printLog("Finish loading  parameter");
 	    printLog("----------------------------------");
 	    if ($wurflnetdownload eq "true") {
@@ -261,6 +279,17 @@ sub loadConfigFile {
 		     ModPerl::Util::exit();
 		}
         printLog("WURFL version: $WURFLVersion");
+        
+        if ($cacheSystem->restore('wurfl-conf', 'ver') ne $WURFLVersion || $cacheSystem->restore('wurfl-conf', 'caplist') ne $ENV{CapabilityList}||$cacheSystem->restore('wurfl-conf', 'listall') ne $listall) {
+            printLog("*********************************************************************************************************************");
+            printLog("* This is a new version of WURFL or you change value of CapabilityList parameter, now the old cache must be deleted *");
+            printLog("*********************************************************************************************************************");
+	        $cacheSystem->store('wurfl-conf', 'ver', $WURFLVersion);
+	        $cacheSystem->store('wurfl-conf', 'caplist', $ENV{CapabilityList});
+	        $cacheSystem->store('wurfl-conf', 'listall', $listall);
+	        $cacheSystem->delete_namespace( 'WURFL-id' );       
+	        $cacheSystem->delete_namespace( 'WURFL-ua' );       
+        }
         printLog("This version of WURFL has $arrLen UserAgent");
         printLog("End loading  WURFL.xml");
 }
@@ -277,12 +306,15 @@ sub parseWURFLFile {
 		 if ($val) {
 		    $id="$val";
 		 } 
-	      if ($record =~ /\<device/o) {
+	     if ($record =~ /\<device/o) {
 	        if (index($record,'user_agent') > 0 ) {
 	           $ua=substr($record,index($record,'user_agent') + 12,index($record,'"',index($record,'user_agent')+ 13)- index($record,'user_agent') - 12);
+			  if (index($ua,'BlackBerry') >0 ) {
+					$ua=substr($ua,index($ua,'BlackBerry'));
+			  }
 	        }	        
 	        if (index($record,'id') > 0 ) {
-	           $id=substr($record,index($record,'id') + 4,index($record,'"',index($record,'id')+ 5)- index($record,'id') - 4);	           
+	           $id=substr($record,index($record,'id') + 4,index($record,'"',index($record,'id')+ 5)- index($record,'id') - 4);	
 	        }	        
 	        if (index($record,'fall_back') > 0 ) {
 	           $fb=substr($record,index($record,'fall_back') + 11,index($record,'"',index($record,'fall_back')+ 12)- index($record,'fall_back') - 11);	           
@@ -302,6 +334,7 @@ sub parseWURFLFile {
 				                $contaUA=$contaUA-1;
 						 }
 				 }
+				 
 		 }
 		 if ($record =~ /\<capability/o) { 
 			($null,$name,$null2,$value,$null3,$fb)=split(/\"/, $record);
@@ -382,7 +415,7 @@ sub FallBack {
         	   $ArrayCapFoundToPass{$capability}=$Array_DDRcapability{$dummy2};
         	} else {
 	        	  $dummy_id=$Array_fb{$dummy_id};        
-	        	  if ($dummy_id eq "root") {
+	        	  if ($dummy_id eq "root" || $dummy_id eq "generic") {
 	        	    $LOOP=1;
 	        	  }
         	}   
@@ -532,6 +565,9 @@ sub handler {
 	  				$user_agent=$ArrayQuery{amf};
 	  	  }
 		  
+	  if (index($user_agent,'BlackBerry') >0 ) {
+			$user_agent=substr($user_agent,index($user_agent,'BlackBerry'));
+	  }
 	
 	
 	  if (index($user_agent,'UP.Link') >0 ) {
@@ -539,16 +575,16 @@ sub handler {
 	  }
       my $cookie = $f->headers_in->{Cookie} || '';
       $id=readCookie($cookie);
-      if ($Cache_ua{$user_agent}) {
+      if ($cacheSystem->restore( 'wurfl-ua', $user_agent )) {
           #
           # cookie is not empty so I try to read in memory cache on my httpd cache
           #
-          $id=$Cache_ua{$user_agent};
-          if ($Cache_id{$id}) {
+          $id=$cacheSystem->restore( 'wurfl-ua', $user_agent );
+          if ($cacheSystem->restore( 'wurfl-id', $id )) {    
 				#
 				# I'm here only for old device
 				#
-				my @pairs = split(/&/, $Cache_id{$id});
+				my @pairs = split(/&/, $cacheSystem->restore( 'wurfl-id', $id ));
 				my $param_tofound;
 				my $string_tofound;
 				foreach $param_tofound (@pairs) {      	       
@@ -557,27 +593,28 @@ sub handler {
 					my $upper2=uc($string_tofound);
 					$f->subprocess_env("AMF_$upper2" => $ArrayCapFound{$string_tofound});
 				}
-				$id=$ArrayCapFound{id};								   
-				$f->pnotes('width' => $ArrayCapFound{max_image_width}); 
-				$f->pnotes('height' => $ArrayCapFound{max_image_height});
+				$f->pnotes('max_image_height' => $ArrayCapFound{max_image_height});	
+				$f->pnotes('max_image_width' => $ArrayCapFound{max_image_width});	
+				$id=$ArrayCapFound{id};
 		  }
       } else {
               if ($id eq "") { 
 				  if ($user_agent) {
 							$id=IdentifyUAMethod($user_agent,2);
 							$method="IdentifyUAMethod($id),$user_agent";
-							$Cache_ua{$user_agent}=$id;
+							$cacheSystem->store( 'wurfl-ua', $user_agent, $id);
+
 				  }
               }                        
 		      if ($id ne "") {
 		          #
 		          # cookie is not empty so I try to read in memory cache on my httpd cache
 		          #
-		          if ($Cache_id{$id}) {
+		          if ($cacheSystem->restore( 'wurfl-id', $id )) {
 						#
 						# I'm here only for old device looking in cache
 						#
-						my @pairs = split(/&/, $Cache_id{$id});
+						my @pairs = split(/&/, $cacheSystem->restore( 'wurfl-id', $id ));
 						my $param_tofound;
 						my $string_tofound;
 						foreach $param_tofound (@pairs) {      	       
@@ -608,8 +645,8 @@ sub handler {
 						$f->pnotes('width' => $ArrayCapFound{max_image_width}); 
 						$f->pnotes('height' => $ArrayCapFound{max_image_height});
 						$f->subprocess_env("AMF_ID" => $id);
-						$Cache_id{$id}=$variabile2;
-						$Cache_ua{$user_agent}=$id;
+						$cacheSystem->store( 'wurfl-id', $id, $variabile2 );
+						$cacheSystem->store( 'wurfl-ua', $user_agent, $id);
 						if ($cookiecachesystem eq "true") {
 							$f->err_headers_out->set('Set-Cookie' => "amf=$id; path=/;");	
 						}		  			  
@@ -619,18 +656,14 @@ sub handler {
 	      	     #
 	      	     # unknown device 
 	      	     #
-				 $f->log->warn("Device not found:$user_agent");
-				 $Cache_ua{$user_agent}="device_not_found";
+				 #$f->log->warn("Device not found:$user_agent");
+				 $cacheSystem->store( 'wurfl-ua', $user_agent, "device_not_found");
 				 if ($cookiecachesystem eq "true") {
 							$f->err_headers_out->set('Set-Cookie' => "amf=device_not_found; path=/;");	
 				  }		  			  
 				 $method="";     	 
 	      	  }
       }		
-	  if ($method) {
-			$f->log->debug("New id found - $method -->$variabile");
-			$f->log->warn("New id found - $method");
-      }
 	
 					
 		#
@@ -682,9 +715,9 @@ The configuration of V2.x of B<"Apache Mobile Filter"> is very simple thane V1.x
 Add this parameter into httpd.conf file:
 
 =over 4
+=item C<PerlSetEnv CacheDirectoryStore /tmp>
 
 =item C<PerlSetEnv CapabilityList max_image_width,j2me_midp_2_0> *
-
 
 =item C<PerlSetEnv WurflNetDownload true>***
 
@@ -730,6 +763,7 @@ Add this parameter into httpd.conf file:
 For this configuration you need to set this parameter
 
 =over 4	
+=item C<PerlSetEnv CacheDirectoryStore>: set where the AMF cache is located
 
 =item C<ConvertImage> (boolean): activate/deactivate the adaptation of images to the device
 

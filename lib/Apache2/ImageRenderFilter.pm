@@ -3,7 +3,7 @@
 
 #
 # Created by Idel Fuschini 
-# Date: 12/05/09
+# Date: 04/11/09
 # Site: http://www.idelfuschini.it
 # Mail: idel.fuschini@gmail.com
 
@@ -31,7 +31,7 @@ package Apache2::ImageRenderFilter;
   # 
 
   use vars qw($VERSION);
-  $VERSION= "2.07";
+  $VERSION= "2.1";
   my %Capability;
   my %Array_fb;
   my %Array_id;
@@ -171,13 +171,12 @@ sub handler    {
       my $height=1000;
       my $image2="";
       
-      if ($f->r->pnotes('width')) {      
-      	$width=$f->r->pnotes('width')
+      if ($f->r->pnotes('max_image_width')) {      
+      	$width=$f->r->pnotes('max_image_width')
       }
-      if ($f->r->pnotes('height')) {
-         $height=$f->r->pnotes('height');
+      if ($f->r->pnotes('max_image_height')) {
+         $height=$f->r->pnotes('max_image_height');
       }
-      #$f->r->warn("$width,$height");
       $repasshanlder=$repasshanlder + 1;
  	  #
  	  # Reading value of query string 
@@ -249,7 +248,7 @@ sub handler    {
 							}
 						  close(FH);
 						  } else {
-					         $s->err("Can not create $docroot$imagefile");
+					         $s->warn("Can not create $docroot$imagefile");
 					      }
 					  }
 					  $f->r->internal_redirect($imagefile);

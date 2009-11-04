@@ -22,8 +22,8 @@ WriteMakefile(
 					 'Image::Resize'        => 0,
 					 'LWP::Simple'        => 0,
 					 'File::Copy' => 0,
-					 'IO::Uncompress::Unzip'    => 0 
-					 
+					 'IO::Uncompress::Unzip'    => 0,
+					 'Cache::FileBackend' => 0 		 
                      },
     AUTHOR     	=> 'Idel Fuschini (idel@idelfuschini.it)' 
    
