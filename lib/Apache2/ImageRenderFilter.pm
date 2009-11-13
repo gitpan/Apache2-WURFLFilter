@@ -31,7 +31,7 @@ package Apache2::ImageRenderFilter;
   # 
 
   use vars qw($VERSION);
-  $VERSION= "2.1";
+  $VERSION= "2.11";
   my %Capability;
   my %Array_fb;
   my %Array_id;
@@ -139,7 +139,6 @@ sub loadConfigFile {
 			    printLog("ERROR: ResizeImageDirectory parameter must be setted");
 			    ModPerl::Util::exit();
 			 }
-	      
 	    printLog("Finish loading  parameter");
 }
 sub handler    {
@@ -170,7 +169,7 @@ sub handler    {
       my $width=1000;
       my $height=1000;
       my $image2="";
-      
+      $content_type=lc($content_type);
       if ($f->r->pnotes('max_image_width')) {      
       	$width=$f->r->pnotes('max_image_width')
       }
@@ -181,6 +180,8 @@ sub handler    {
  	  #
  	  # Reading value of query string 
  	  #
+      
+
  	  if ($query_string) {
 		  my @vars = split(/&/, $query_string); 	  
 		  foreach $var (sort @vars){
@@ -224,8 +225,7 @@ sub handler    {
 				  #
 				  # control if image exist
 				  #
-				 
-				  $imageToConvert="$docroot$uri";
+				  $imageToConvert=$f->r->filename();
 				  $return_value=Apache2::Const::DECLINED;
 				  if ( -e "$imageToConvert") {
 					  if ( -e "$docroot$imagefile") {

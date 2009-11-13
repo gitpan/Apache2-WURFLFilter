@@ -32,7 +32,7 @@ package Apache2::WURFLFilter;
   # 
 
   use vars qw($VERSION);
-  $VERSION= "2.1";
+  $VERSION= "2.11";
   my %Capability;
   my %Array_fb;
   my %Array_id;

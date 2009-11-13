@@ -1,3 +1,7 @@
+WURFLFilter 2.11
+Fixed bugs in ImageFilter for extension uppercase thanks to Sergio
+Fixed bugs in ImageFilter for Alias directive thanks to Sergio
+
 WURFLFilter 2.1
 Added Parameter CacheDirectoryStore to set the directory where the data are stored.
 The Cache system use the Cache::FileBackend library, now the capabilities of device data are stored on filesystem. So if the version of WURFL or CapabilityList are not changed at startup Apache don't lost the data stored.
