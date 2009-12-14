@@ -1,3 +1,6 @@
+WURFLFilter 2.20a
+Correct the documentation into AMFDeviceDetection
+
 WURFLFilter 2.20
 New module: The switcher mode now is in a separated module called AMFSwitcher.pm, this module use the same parameter that before version (FullBrowserUrl, MobileVersionUrl, RedirectTranscoderUrl)
 New module: Create the AMFCarrierDetection to detect by ip address the carrier name and its nation and pass the parameters as environment variable (AMF_CARRIER_NAME, AMF_CARRIER_NATION)

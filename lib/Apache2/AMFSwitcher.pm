@@ -24,7 +24,7 @@ package Apache2::AMFSwitcher;
   use IO::Uncompress::Unzip qw(unzip $UnzipError) ;
   use constant BUFF_LEN => 1024;
   use vars qw($VERSION);
-  $VERSION= "2.20";
+  $VERSION= "2.20a";
   #
   # Define the global environment
   #

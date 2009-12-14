@@ -20,7 +20,7 @@
   use Apache2::Const -compile => qw(OK);
   
   use constant BUFF_LEN => 1024;
-  my $VERSION= "2.20";
+  my $VERSION= "2.20a";
   my $cachedirectorystore="notdefined";
   #
   # Define the global environment
@@ -179,7 +179,7 @@ sub printLog {
   1;
 =head1 NAME
 
-Apache2::AMFCarrierDetection - This module is an admin tool to control the devices access that Apache Mobile Filter has detected.
+Apache2::AMFDeviceMonitor - This module is an admin tool to control the devices access that Apache Mobile Filter has detected.
 
 
 =head1 COREQUISITES
