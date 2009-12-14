@@ -1,3 +1,10 @@
+WURFLFilter 2.20
+New module: The switcher mode now is in a separated module called AMFSwitcher.pm, this module use the same parameter that before version (FullBrowserUrl, MobileVersionUrl, RedirectTranscoderUrl)
+New module: Create the AMFCarrierDetection to detect by ip address the carrier name and its nation and pass the parameters as environment variable (AMF_CARRIER_NAME, AMF_CARRIER_NATION)
+New module: Create the AMFDeviceMonitor a simple admin tool to see witch type of device has access in your site (beta version)
+Performance increase of WURFLFilter.pm and patched the manage of web_browsers_patch.xml
+ImageFIlterRender set the no cache for the images (for firefox and ie problem)
+
 WURFLFilter 2.11
 Fixed bugs in ImageFilter for extension uppercase thanks to Sergio
 Fixed bugs in ImageFilter for Alias directive thanks to Sergio

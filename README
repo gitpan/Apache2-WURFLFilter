@@ -18,7 +18,7 @@ Library I have used:
 Apache2::Filter
 Apache2::RequestRec
 Apache2::RequestUtil
-Apache2::SubRequest
+Apache2::Connection
 Apache2::Log
 CGI::Cookie
 APR::Table
@@ -61,6 +61,33 @@ PerlModule Apache2::WURFLFilter
 PerlTransHandler +Apache2::WURFLFilter
 # This is indicate to the filter were are stored the high definition images
 PerlSetEnv ResizeImageDirectory /transform 
+
+
+
+#
+#configure to activate AMFCarrierDetection 
+# 
+
+PerlSetEnv CarrierNetDownload true
+PerlSetEnv CarrierUrl http://www.andymoore.info/carrier-data.txt
+
+PerlTransHandler +Apache2::AMFCarrierDetection
+
+#
+#configure to activate AMFSwitcher  
+# 
+
+PerlSetEnv RedirectTranscoderUrl http://www.cnn.com
+PerlSetEnv FullBrowserUrl http://www.repubblica.it
+
+PerlTransHandler +Apache2::AMFSwitcher
+
+
+
+
+#
+#configure to activate ImageRenderFilter  
+# 
 
 <Location /mobile/*>
     SetHandler modperl

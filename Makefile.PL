@@ -13,17 +13,20 @@ WriteMakefile(
     DISTNAME	=> "Apache2-WURFLFilter",
     dist		=> {COMPRESS => 'gzip', SUFFIX => 'gz'},
     PREREQ_PM    => {
-                     'Apache2::Filter'      => 0,
-                     'Apache2::RequestRec'      => 0,
+                     'Apache2::Filter' => 0,
+                     'Apache2::RequestRec' => 0,
                      'Apache2::RequestUtil' => 0,
-                     'CGI::Cookie'      => 0, 
-                     'APR::Table'        => 0, 
-                     'Apache2::Const'        => 0, 
-					 'Image::Resize'        => 0,
-					 'LWP::Simple'        => 0,
-					 'File::Copy' => 0,
-					 'IO::Uncompress::Unzip'    => 0,
-					 'Cache::FileBackend' => 0 		 
+                     'Apache2::SubRequest' => 0,
+                     'Apache2::Connection' => 0,
+                     'CGI::Cookie' => 0, 
+                     'APR::Table' => 0, 
+                     'Apache2::Const' => 0, 
+		     'Image::Resize' => 0,
+		     'LWP::Simple' => 0,
+		     'File::Copy' => 0,
+	       	     'IO::Uncompress::Unzip'  => 0,
+	       	 'Cache::Memcached'  => 0,
+		     'Cache::FileBackend' => 0 		 
                      },
     AUTHOR     	=> 'Idel Fuschini (idel@idelfuschini.it)' 
    

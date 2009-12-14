@@ -3,7 +3,7 @@
 
 #
 # Created by Idel Fuschini 
-# Date: 04/11/09
+# Date: 15/12/09
 # Site: http://www.idelfuschini.it
 # Mail: idel.fuschini@gmail.com
 
@@ -22,7 +22,6 @@ package Apache2::WURFLFilter;
   use LWP::Simple;
   use Apache2::Const -compile => qw(OK REDIRECT DECLINED);
   use IO::Uncompress::Unzip qw(unzip $UnzipError) ;
-  use File::Copy;
   use constant BUFF_LEN => 1024;
   use Cache::FileBackend;
 
@@ -32,38 +31,60 @@ package Apache2::WURFLFilter;
   # 
 
   use vars qw($VERSION);
-  $VERSION= "2.11";
+  $VERSION= "2.20";
   my %Capability;
   my %Array_fb;
   my %Array_id;
   my %Array_fullua_id;
   my %Array_DDRcapability;
-  
 
+  my %PatchArray_id;
+  my %MobileArray;
+  
+  $MobileArray{'mobile'}='mobile';
+  $MobileArray{'symbian'}='mobile';
+  $MobileArray{'midp'}='mobile';
+  $MobileArray{'android'}='mobile';
+  $MobileArray{'iphone'}='mobile';
+  $MobileArray{'ipod'}='mobile';
+  $MobileArray{'google'}='mobile';
+  $MobileArray{'novarra'}='mobile';
+
+
+  
   my $mobileversionurl="none";
   my $fullbrowserurl="none";
-  my $querystring="false";
-  my $showdefaultvariable="false";
+  my $redirecttranscoder="true";
+  my $redirecttranscoderurl="none";
+  my $resizeimagedirectory="none";
   my $wurflnetdownload="false";
   my $downloadwurflurl="false";
   my $loadwebpatch="false";
   my $patchwurflnetdownload="false"; 
   my $patchwurflurl="";
-  my $redirecttranscoder="true";
-  my $redirecttranscoderurl="none";
   my $listall="false";
   my $cookiecachesystem="false";
   my $WURFLVersion="unknown";  
   my $cachedirectorystore="/tmp";
-  
-  $Capability{'resolution_width'}="resolution_width";  
-  $Capability{'max_image_width'}="max_image_width";
-  $Capability{'max_image_height'}="max_image_width";  
-  $Capability{'is_wireless_device'}="is_wireless_device";
-  $Capability{'device_claims_web_support'}="device_claims_web_support";
-  $Capability{'xhtml_support_level'}="xhtml_support_level";
-  $Capability{'html_wi_imode_ compact_generic'}="html_wi_imode_ compact_generic";
-  $Capability{'is_transcoder'}="is_transcoder";  
+  printLog("---------------------------------------------------------------------------"); 
+  printLog("-------                 APACHE MOBILE FILTER V$VERSION                  -------");
+  printLog("---------------------------------------------------------------------------"); 
+  printLog("WURFLFilter module Version $VERSION");
+  if ($ENV{ResizeImageDirectory}) {
+	  $Capability{'max_image_width'}="max_image_width";
+	  $Capability{'max_image_height'}="max_image_width"; 
+	  $resizeimagedirectory=$ENV{ResizeImageDirectory};
+  } 
+  if (($ENV{FullBrowserUrl}) || ($ENV{MobileVersionUrl})) {
+	  $Capability{'device_claims_web_support'}="device_claims_web_support";
+	  $Capability{'is_wireless_device'}="is_wireless_device";
+	  $fullbrowserurl=$ENV{FullBrowserUrl} 
+  } 
+  if ($ENV{RedirectTranscoderUrl}) {
+	  $Capability{'is_transcoder'}="is_transcoder";
+	  $redirecttranscoderurl=$ENV{RedirectTranscoderUrl};
+  } 
+
   #
   # Check if MOBILE_HOME and CacheDirectoryStore is setting in apache httpd.conf file for example:
   # PerlSetEnv MOBILE_HOME <apache_directory>/MobileFilter
@@ -86,6 +107,10 @@ package Apache2::WURFLFilter;
       	    $cacheSystem->store('wurfl-conf', 'ver', 'null');
 	        $cacheSystem->store('wurfl-conf', 'caplist', 'null');
 	        $cacheSystem->store('wurfl-conf', 'listall', 'null');
+	        $cacheSystem->store('wurfl-conf', 'RedirectTranscoderUrl','null');
+	        $cacheSystem->store('wurfl-conf', 'MobileVersionUrl','null');
+	        $cacheSystem->store('wurfl-conf', 'FullBrowserUrl','null');
+	        $cacheSystem->store('wurfl-conf', 'ResizeImageDirectory','null');
   }
   if ($ENV{MOBILE_HOME}) {
 	  &loadConfigFile("$ENV{MOBILE_HOME}/wurfl.xml");
@@ -106,19 +131,6 @@ sub loadConfigFile {
 	     my $dummy;
 	      	#The filter
 	      	printLog("Start read configuration from httpd.conf");
-	      	 if ($ENV{MobileVersionUrl}) {
-				$mobileversionurl=$ENV{MobileVersionUrl};
-				printLog("MobileVersionUrl is: $mobileversionurl");
-			 }	
-	      	 if ($ENV{FullBrowserUrl}) {
-				$fullbrowserurl=$ENV{FullBrowserUrl};
-				printLog("FullBrowserUrl is: $fullbrowserurl");
-			 }		
-	      	 if ($ENV{RedirectTranscoderUrl}) {
-				$redirecttranscoderurl=$ENV{RedirectTranscoderUrl};
-				$redirecttranscoder="true";
-				printLog("RedirectTranscoderUrl is: $redirecttranscoderurl");
-			 }	
 	
 	      	 if ($ENV{WurflNetDownload}) {
 				$wurflnetdownload=$ENV{WurflNetDownload};
@@ -159,7 +171,7 @@ sub loadConfigFile {
 	
 
 	    printLog("Finish loading  parameter");
-	    printLog("----------------------------------");
+		printLog("---------------------------------------------------------------------------"); 
 	    if ($wurflnetdownload eq "true") {
 	        printLog("Start process downloading  WURFL.xml from $downloadwurflurl");
 	        my $data = Data();
@@ -249,7 +261,7 @@ sub loadConfigFile {
 				my $row;
 				my $count=0;
 				foreach $row (@rows){
-					$r_id=parseWURFLFile($row,$r_id);
+					$r_id=parsePatchFile($row,$r_id);
 				}
 	         } else {
 				my $filePatch="$ENV{MOBILE_HOME}/web_browsers_patch.xml";
@@ -257,7 +269,7 @@ sub loadConfigFile {
 						printLog("Start loading Web Patch File of WURFL");
 						if (open (IN,"$filePatch")) {
 							while (<IN>) {
-								 $r_id=parseWURFLFile($_,$r_id);
+								 $r_id=parsePatchFile($_,$r_id);
 								 
 							}
 							close IN;
@@ -279,14 +291,18 @@ sub loadConfigFile {
 		     ModPerl::Util::exit();
 		}
         printLog("WURFL version: $WURFLVersion");
-        
-        if ($cacheSystem->restore('wurfl-conf', 'ver') ne $WURFLVersion || $cacheSystem->restore('wurfl-conf', 'caplist') ne $ENV{CapabilityList}||$cacheSystem->restore('wurfl-conf', 'listall') ne $listall) {
-            printLog("*********************************************************************************************************************");
-            printLog("* This is a new version of WURFL or you change value of CapabilityList parameter, now the old cache must be deleted *");
-            printLog("*********************************************************************************************************************");
+        if ($cacheSystem->restore('wurfl-conf', 'ResizeImageDirectory') ne $resizeimagedirectory||$cacheSystem->restore('wurfl-conf', 'DownloadWurflURL') ne $downloadwurflurl||$cacheSystem->restore('wurfl-conf', 'FullBrowserUrl') ne $fullbrowserurl||$cacheSystem->restore('wurfl-conf', 'RedirectTranscoderUrl') ne $redirecttranscoderurl || $cacheSystem->restore('wurfl-conf', 'ver') ne $WURFLVersion || $cacheSystem->restore('wurfl-conf', 'caplist') ne $ENV{CapabilityList}||$cacheSystem->restore('wurfl-conf', 'listall') ne $listall) {
+            printLog("********************************************************************************************************");
+            printLog("* This is a new version of WURFL or you change some parameter value, now the old cache must be deleted *");
+            printLog("********************************************************************************************************");
 	        $cacheSystem->store('wurfl-conf', 'ver', $WURFLVersion);
 	        $cacheSystem->store('wurfl-conf', 'caplist', $ENV{CapabilityList});
 	        $cacheSystem->store('wurfl-conf', 'listall', $listall);
+	        $cacheSystem->store('wurfl-conf', 'RedirectTranscoderUrl', $redirecttranscoderurl);
+	        $cacheSystem->store('wurfl-conf', 'FullBrowserUrl', $fullbrowserurl);
+	        $cacheSystem->store('wurfl-conf', 'DownloadWurflURL', $downloadwurflurl);
+	        $cacheSystem->store('wurfl-conf', 'ResizeImageDirectory', $resizeimagedirectory);
+	        
 	        $cacheSystem->delete_namespace( 'WURFL-id' );       
 	        $cacheSystem->delete_namespace( 'WURFL-ua' );       
         }
@@ -347,6 +363,54 @@ sub parseWURFLFile {
 		 }
 		 if ($record =~ /\<ver/o) {
 		     $WURFLVersion=extValueTag("ver",$record);
+		 }
+		 return $id;
+
+}
+sub parsePatchFile {
+         my ($record,$val) = @_;
+		 my $null="";
+		 my $null2="";
+		 my $null3="";
+		 my $ua="";
+		 my $fb="";
+		 my $value="";
+		 my $id;
+		 my $name="";
+		 if ($val) {
+		    $id="$val";
+		 } 
+	     if ($record =~ /\<device/o) {
+	        if (index($record,'user_agent') > 0 ) {
+	           $ua=substr($record,index($record,'user_agent') + 12,index($record,'"',index($record,'user_agent')+ 13)- index($record,'user_agent') - 12);
+			  if (index($ua,'BlackBerry') >0 ) {
+					$ua=substr($ua,index($ua,'BlackBerry'));
+			  }
+	        }	        
+	        if (index($record,'id') > 0 ) {
+	           $id=substr($record,index($record,'id') + 4,index($record,'"',index($record,'id')+ 5)- index($record,'id') - 4);	
+	        }	        
+	        if (index($record,'fall_back') > 0 ) {
+	           $fb=substr($record,index($record,'fall_back') + 11,index($record,'"',index($record,'fall_back')+ 12)- index($record,'fall_back') - 11);	           
+	        }
+	        if (($fb) && ($id)) {	     	   
+					$Array_fb{"$id"}=$fb;
+				 }
+				 if (($ua) && ($id)) {
+				         #if (index($id,'_') > 0) {
+			             	$PatchArray_id{$ua}=$id;
+				         #}
+			             $Array_id{$ua}=$id;
+				 }				 
+		 }
+		 if ($record =~ /\<capability/o) { 
+			($null,$name,$null2,$value,$null3,$fb)=split(/\"/, $record);
+			if ($listall eq "true") {
+				$Capability{$name}=$name;
+			}
+			if (($id) && ($Capability{$name}) && ($name) && ($value)) {			   
+			   $Array_DDRcapability{"$val|$name"}=$value;
+			}
 		 }
 		 return $id;
 
@@ -425,7 +489,7 @@ sub FallBack {
    return %ArrayCapFoundToPass;
 }
 sub IdentifyUAMethod {
-  my ($UserAgent,$precision) = @_;
+  my ($UserAgent) = @_;
   my $ind=0;
   my %ArrayPM;
   my $pair; 
@@ -446,6 +510,19 @@ sub IdentifyUAMethod {
            $id_find=$Array_id{$dummy};
          }
       }
+  }
+  return $id_find;
+}
+sub IdentifyPCUAMethod {
+  my ($UserAgent) = @_;
+  my $ind=0;
+  my $id_find="";
+  my $pair;
+  foreach $pair (%PatchArray_id)
+  {
+       if (index($UserAgent,$pair) > 0) {
+           $id_find=$PatchArray_id{$pair};
+       }
   }
   return $id_find;
 }
@@ -516,66 +593,43 @@ sub readCookie {
     return $id_return;
 }
 sub handler {
-      my $f = shift;
-      
-      my $capability2;
-      my $variabile="";
-      my $user_agent=$f->headers_in->{'User-Agent'}|| '';
-      my $x_user_agent=$f->headers_in->{'X-Device-User-Agent'}|| '';
-      my $query_string=$f->args;
-      my $uri = $f->uri();
-      my ($content_type) = $uri =~ /\.(\w+)$/;
-      my @fileArray = split(/\//, $uri);
-      my $file=$fileArray[-1];
-      my $docroot = $f->document_root();
-      my $id="";
-      my $method="";
-      my $location="none";
-      my $width_toSearch;
-      my $type_redirect="internal";
-      my $return_value;
-	  my $dummy="";
-	  my $variabile2="";
-	  my %ArrayCapFound;
-	  my $controlCookie;
-	  my $query_img="";
-	  $ArrayCapFound{is_transcoder}='false';
-      my %ArrayQuery;
-      my $var;
-      if ($x_user_agent) {
-         $f->log->warn("Warn probably transcoder: $x_user_agent");
-         $user_agent=$x_user_agent;
-      }
-      ## uncomment this code for pass the useragent in query string (JUST for demo)
-	  if ($query_string) {
-	  		  my @vars = split(/&/, $query_string); 	  
-	  		  foreach $var (sort @vars){
-	  				   if ($var) {
-	  						my ($v,$i) = split(/=/, $var);
-	  					$v =~ tr/+/ /;
-	  					$v =~ s/%([a-fA-F0-9][a-fA-F0-9])/pack("C", hex($1))/eg;
-	  						$i =~ tr/+/ /;
-	  						$i =~ s/%([a-fA-F0-9][a-fA-F0-9])/pack("C", hex($1))/eg;
-	  						$i =~ s/<!--(.|\n)*-->//g;
-	  						$ArrayQuery{$v}=$i;
-	  					}
-	  		  }
-	   }
-	  	  if ($ArrayQuery{amf}) {
-	  				$user_agent=$ArrayQuery{amf};
-	  	  }
-		  
-	  if (index($user_agent,'BlackBerry') >0 ) {
-			$user_agent=substr($user_agent,index($user_agent,'BlackBerry'));
-	  }
-	
-	
-	  if (index($user_agent,'UP.Link') >0 ) {
-			$user_agent=substr($user_agent,0,index($user_agent,'UP.Link'));
-	  }
-      my $cookie = $f->headers_in->{Cookie} || '';
-      $id=readCookie($cookie);
-      if ($cacheSystem->restore( 'wurfl-ua', $user_agent )) {
+    my $f = shift;  
+    my $capability2;
+    my $variabile="";
+    my $user_agent=$f->headers_in->{'User-Agent'}|| '';
+    my $x_user_agent=$f->headers_in->{'X-Device-User-Agent'}|| '';
+    my $query_string=$f->args;
+    my $docroot = $f->document_root();
+    my $id="";
+    my $location="none";
+    my $width_toSearch;
+    my $type_redirect="internal";
+    my $return_value;
+	my $dummy="";
+	my $variabile2="";
+	my %ArrayCapFound;
+	my $controlCookie;
+	my $query_img="";
+	$ArrayCapFound{is_transcoder}='false';
+    my %ArrayQuery;
+    my $var;
+    my $mobile=0;
+
+    if ($x_user_agent) {
+       $f->log->warn("Warn probably transcoder: $x_user_agent");
+       $user_agent=$x_user_agent;
+    }	  
+	if ($user_agent =~ m/Blackberry/i) {	 
+		$user_agent=substr($user_agent,index($user_agent,'BlackBerry'));
+		$mobile=1;
+	}
+	if ($user_agent =~ m/UP.link/i ) {
+		$user_agent=substr($user_agent,0,index($user_agent,'UP.Link') - 1);
+		$mobile=1;
+	}
+    my $cookie = $f->headers_in->{Cookie} || '';
+    $id=readCookie($cookie);
+    if ($cacheSystem->restore( 'wurfl-ua', $user_agent )) {
           #
           # cookie is not empty so I try to read in memory cache on my httpd cache
           #
@@ -595,111 +649,83 @@ sub handler {
 				}
 				$f->pnotes('max_image_height' => $ArrayCapFound{max_image_height});	
 				$f->pnotes('max_image_width' => $ArrayCapFound{max_image_width});	
+				$f->pnotes('device_claims_web_support' => $ArrayCapFound{device_claims_web_support});	
+				$f->pnotes('is_wireless_device' => $ArrayCapFound{is_wireless_device});	
+				$f->pnotes('is_transcoder' => $ArrayCapFound{is_transcoder});	
 				$id=$ArrayCapFound{id};
 		  }
-      } else {
+    } else {
               if ($id eq "") { 
 				  if ($user_agent) {
-							$id=IdentifyUAMethod($user_agent,2);
-							$method="IdentifyUAMethod($id),$user_agent";
-							$cacheSystem->store( 'wurfl-ua', $user_agent, $id);
-
-				  }
+					my $pair;
+					my $lcuser_agent=lc($user_agent);
+	  			    if ($mobile==0) {
+						foreach $pair (%MobileArray) {		
+							if ($user_agent =~ m/$pair/i) {
+								$mobile=1;
+							}
+						}
+						if ($mobile==0) {						
+							$id=IdentifyPCUAMethod($user_agent);
+						}			            
+					}
+					if ($id eq "") { 
+						$id=IdentifyUAMethod($user_agent);
+					}
+					$cacheSystem->store( 'wurfl-ua', $user_agent, $id);
+				  }	
               }                        
 		      if ($id ne "") {
-		          #
-		          # cookie is not empty so I try to read in memory cache on my httpd cache
-		          #
-		          if ($cacheSystem->restore( 'wurfl-id', $id )) {
-						#
-						# I'm here only for old device looking in cache
-						#
-						my @pairs = split(/&/, $cacheSystem->restore( 'wurfl-id', $id ));
-						my $param_tofound;
-						my $string_tofound;
-						foreach $param_tofound (@pairs) {      	       
-							($string_tofound,$dummy)=split(/=/, $param_tofound);
-							$ArrayCapFound{$string_tofound}=$dummy;
-							my $upper2=uc($string_tofound);
-							$f->subprocess_env("AMF_$upper2" => $ArrayCapFound{$string_tofound});
-						}
-						$id=$ArrayCapFound{id};								   
-						$f->pnotes('width' => $ArrayCapFound{max_image_width}); 
-						$f->pnotes('height' => $ArrayCapFound{max_image_height});
+	      	     #
+	      	     #  device detected 
+	      	     #
+		         if ($cacheSystem->restore( 'wurfl-id', $id )) {
+					#
+					# I'm here only for old device looking in cache
+					#
+					my @pairs = split(/&/, $cacheSystem->restore( 'wurfl-id', $id ));
+					my $param_tofound;
+					my $string_tofound;
+					foreach $param_tofound (@pairs) {      	       
+						($string_tofound,$dummy)=split(/=/, $param_tofound);
+						$ArrayCapFound{$string_tofound}=$dummy;
+						my $upper2=uc($string_tofound);
+						$f->subprocess_env("AMF_$upper2" => $ArrayCapFound{$string_tofound});
+					}
+					$id=$ArrayCapFound{id};								   
 				  } else {
-						%ArrayCapFound=FallBack($id);         
-						my $count=0;
-						my $count2=0;
-						foreach $capability2 (sort keys %ArrayCapFound) {
-							my $visible=0;
-							if ($count2==0) {
-								$variabile2="$capability2=$ArrayCapFound{$capability2}";
-								$count2=1;
-							} else {
-										$variabile2="$variabile2&$capability2=$ArrayCapFound{$capability2}";
-							} 						
-							my $upper=uc($capability2);
-							$f->subprocess_env("AMF_$upper" => $ArrayCapFound{$capability2});
-						}
-						$variabile2="id=$id&$variabile2";
-						$f->pnotes('width' => $ArrayCapFound{max_image_width}); 
-						$f->pnotes('height' => $ArrayCapFound{max_image_height});
-						$f->subprocess_env("AMF_ID" => $id);
-						$cacheSystem->store( 'wurfl-id', $id, $variabile2 );
-						$cacheSystem->store( 'wurfl-ua', $user_agent, $id);
-						if ($cookiecachesystem eq "true") {
-							$f->err_headers_out->set('Set-Cookie' => "amf=$id; path=/;");	
-						}		  			  
+					%ArrayCapFound=FallBack($id);         
+					foreach $capability2 (sort keys %ArrayCapFound) {
+						$variabile2="$variabile2$capability2=$ArrayCapFound{$capability2}&";
+						my $upper=uc($capability2);
+						$f->subprocess_env("AMF_$upper" => $ArrayCapFound{$capability2});
+					}
+					$variabile2="id=$id&$variabile2";
+					$f->subprocess_env("AMF_ID" => $id);
+					$cacheSystem->store( 'wurfl-id', $id, $variabile2 );
+					$cacheSystem->store( 'wurfl-ua', $user_agent, $id);
+					if ($cookiecachesystem eq "true") {
+						$f->err_headers_out->set('Set-Cookie' => "amf=$id; path=/;");	
+					}		  			  
 				  }
-	           
+	              $f->pnotes('width' => $ArrayCapFound{max_image_width}); 
+				  $f->pnotes('height' => $ArrayCapFound{max_image_height});
+				  $f->pnotes('device_claims_web_support' => $ArrayCapFound{device_claims_web_support});	
+				  $f->pnotes('is_wireless_device' => $ArrayCapFound{is_wireless_device});	
+				  $f->pnotes('is_transcoder' => $ArrayCapFound{is_transcoder});
 	      	 } else {
 	      	     #
 	      	     # unknown device 
 	      	     #
-				 #$f->log->warn("Device not found:$user_agent");
 				 $cacheSystem->store( 'wurfl-ua', $user_agent, "device_not_found");
 				 if ($cookiecachesystem eq "true") {
 							$f->err_headers_out->set('Set-Cookie' => "amf=device_not_found; path=/;");	
 				  }		  			  
-				 $method="";     	 
 	      	  }
-      }		
-	
-					
-		#
-		# Start redirect for mobile site
-		#
-		if ($fullbrowserurl ne 'none' && $ArrayCapFound{'device_claims_web_support'} eq 'true' && $ArrayCapFound{'is_wireless_device'} eq 'false') {
-						$location=$fullbrowserurl;      		
-		} else {
-		   if ($mobileversionurl && 'none') {
-						$location=$mobileversionurl;
-		   }
-		}
-		if ($ArrayCapFound{'is_transcoder'}) {
-							if ($redirecttranscoderurl ne 'none' && $redirecttranscoder eq 'true' && $ArrayCapFound{'is_transcoder'} eq 'true') {
-								$location=$redirecttranscoderurl;
-							}
-		}
-		if ($location ne "none") {
-						   if (substr($location,0,5) eq "http:") {
-						  $f->log->debug("Redirect: $location");
-						  $f->headers_out->set(Location => $location);
-						  $f->status(Apache2::Const::REDIRECT); 
-						  $return_value=Apache2::Const::REDIRECT;
-					   } else {
-						  $f->log->debug("InternalRedirect: $location");
-						  $f->internal_redirect($location);
-					   }
-		} else {
-		 $f->subprocess_env("AMF_VER" => $VERSION);
-		 $f->subprocess_env("AMF_WURFLVER" => $WURFLVersion);
-		 
-		 $return_value=Apache2::Const::DECLINED;
-		}
-
-    return $return_value;
-
+    }		
+	$f->subprocess_env("AMF_VER" => $VERSION);
+	$f->subprocess_env("AMF_WURFLVER" => $WURFLVersion);	 
+	return Apache2::Const::DECLINED;
 }
 1; 
 __END__

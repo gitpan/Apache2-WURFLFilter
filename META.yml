@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               Apache2-WURFLFilter
-version:            2.11
+version:            2.20
 abstract:           ~
 author:
     - Idel Fuschini (idel@idelfuschini.it)
@@ -9,12 +9,15 @@ distribution_type:  module
 configure_requires:
     ExtUtils::MakeMaker:  0
 requires:
+    Apache2::Connection:  0
     Apache2::Const:       0
     Apache2::Filter:      0
     Apache2::RequestRec:  0
     Apache2::RequestUtil:  0
+    Apache2::SubRequest:  0
     APR::Table:           0
     Cache::FileBackend:   0
+    Cache::Memcached:     0
     CGI::Cookie:          0
     File::Copy:           0
     Image::Resize:        0

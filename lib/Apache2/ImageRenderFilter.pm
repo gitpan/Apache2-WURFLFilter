@@ -3,7 +3,7 @@
 
 #
 # Created by Idel Fuschini 
-# Date: 04/11/09
+# Date: 15/12/09
 # Site: http://www.idelfuschini.it
 # Mail: idel.fuschini@gmail.com
 
@@ -22,7 +22,7 @@ package Apache2::ImageRenderFilter;
   use APR::Table (); 
   use LWP::Simple;
   use Image::Resize;
-  use Apache2::Const -compile => qw(OK REDIRECT DECLINED);
+  use Apache2::Const -compile => qw(OK REDIRECT DECLINED HTTP_MOVED_TEMPORARILY);
   use constant BUFF_LEN => 1024;
 
 
@@ -31,7 +31,7 @@ package Apache2::ImageRenderFilter;
   # 
 
   use vars qw($VERSION);
-  $VERSION= "2.11";
+  $VERSION= "2.20";
   my %Capability;
   my %Array_fb;
   my %Array_id;
@@ -69,10 +69,10 @@ package Apache2::ImageRenderFilter;
   my $detectaccuracy="false";
   my $listall="false";
   
-  $ImageType{'png'}="png";
-  $ImageType{'gif'}="gif";
-  $ImageType{'jpg'}="jpg";
-  $ImageType{'jpeg'}="jpeg";
+  $ImageType{'image/png'}="png";
+  $ImageType{'image/gif'}="gif";
+  $ImageType{'image/jpg'}="jpg";
+  $ImageType{'image/jpeg'}="jpeg";
   
   #
   # Check if MOBILE_HOME is setting in apache httpd.conf file for example:
@@ -81,7 +81,7 @@ package Apache2::ImageRenderFilter;
   printLog("---------------------------------------------------------------------------"); 
   printLog("ImageRenderFilter Version $VERSION");
   if ($ENV{MOBILE_HOME}) {
-	  &loadConfigFile("$ENV{MOBILE_HOME}/WURFLFilterConfig.xml","$ENV{MOBILE_HOME}/wurfl.xml");
+	  &loadConfigFile();
   } else {
 	  printLog("MOBILE_HOME not exist.	Please set the variable MOBILE_HOME into httpd.conf");
 	  ModPerl::Util::exit();
@@ -122,7 +122,6 @@ sub printLog {
 	print "$data - $info\n";
 }
 sub loadConfigFile {
-	     my ($file,$file2) = @_;
 		 my $null="";
 		 my $null2="";
 		 my $null3="";
@@ -145,10 +144,9 @@ sub handler    {
       my $f = shift;
       my $capability2;
       my $s = $f->r->server;
-      my $variabile="";
       my $query_string=$f->r->args;
       my $uri = $f->r->uri();
-      my ($content_type) = $uri =~ /\.(\w+)$/;
+      my $content_type=$f->r->content_type();
       my @fileArray = split(/\//, $uri);
       my $file=$fileArray[-1];
       my $docroot = $f->r->document_root();
@@ -180,9 +178,7 @@ sub handler    {
  	  #
  	  # Reading value of query string 
  	  #
-      
-
- 	  if ($query_string) {
+      if ($query_string) {
 		  my @vars = split(/&/, $query_string); 	  
 		  foreach $var (sort @vars){
 				   if ($var) {
@@ -196,15 +192,9 @@ sub handler    {
 					}
 		  }
  	  }      
-      if ($content_type) {
-        $dummy="";
-      } else {
-         $content_type="-----";
-      }
 	  if ($ImageType{$content_type}) {
 	          my $imageToConvert;
 	          my $imagefile="";
-	          if ($variabile ne "device=false") {
 				  if ($ArrayQuery{height}) {
 				       if ( $ArrayQuery{height} =~ /^-?\d/) {
 				       		$height=$ArrayQuery{height};
@@ -235,14 +225,14 @@ sub handler    {
 						  my $gd = $image->resize($width, $height);
 						  
 						  if (open(FH, ">$docroot$imagefile")) {
-							if ($content_type eq "gif") {
+							if ($content_type eq "image/gif") {
 								print FH $gd->gif();
 								
 							}
-							if ($content_type eq "jpg") {
+							if ($content_type eq "image/jpeg") {
 								print FH $gd->jpeg();
 							}
-							if ($content_type eq "png") {
+							if ($content_type eq "image/png") {
 								$image2=$gd->png();
 								print FH $image2;
 							}
@@ -251,13 +241,16 @@ sub handler    {
 					         $s->warn("Can not create $docroot$imagefile");
 					      }
 					  }
-					  $f->r->internal_redirect($imagefile);
-					  $return_value=Apache2::Const::DECLINED;	  	
+
+					  $f->r->headers_out->set(Pragma => 'no-cache');
+					  $f->r->headers_out->set('Cache-control' => 'no-cache');
+					  $f->r->headers_out->set(Expires => '-1');
+					  $f->r->headers_out->set("Last-Modified" => time());
+	   				  $f->r->headers_out->set("Cache-control"=>"max-age=0");
+				  
+					  $f->r->internal_redirect_handler("$imagefile");
+					  $return_value=Apache2::Const::DECLINED;
 				  }
-              } else {
-                  $f->r->internal_redirect("$resizeimagedirectory/$file");
-                  $return_value=Apache2::Const::OK;	
-              }			  
 	  }
       return $return_value;
       
