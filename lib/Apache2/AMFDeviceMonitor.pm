@@ -11,6 +11,7 @@
   
   use strict;
   use warnings;
+  use Apache2::AMFCommonLib ();
   
   use Apache2::Filter ();
   use Apache2::RequestRec ();
@@ -20,59 +21,27 @@
   use Apache2::Const -compile => qw(OK);
   
   use constant BUFF_LEN => 1024;
-  my $VERSION= "2.20a";
-  my $cachedirectorystore="notdefined";
+  use vars qw($VERSION);
+  $VERSION= "2.21";
   #
   # Define the global environment
   #
+  my $CommonLib = new Apache2::AMFCommonLib ();
+  my $cachedirectorystore="notdefined";
 
-  printLog("---------------------------------------------------------------------------"); 
-  printLog("AMFDeviceMonitor Version $VERSION");
+  $CommonLib->printLog("---------------------------------------------------------------------------"); 
+  $CommonLib->printLog("AMFDeviceMonitor Version $VERSION");
   
   if ($ENV{CacheDirectoryStore}) {
 	$cachedirectorystore=$ENV{CacheDirectoryStore};
-	printLog("CacheDirectoryStore is: $cachedirectorystore");
+	$CommonLib->printLog("CacheDirectoryStore is: $cachedirectorystore");
   } else {
-	  printLog("CacheDirectoryStore not exist.	Please set the variable CacheDirectoryStore into httpd.conf, (the directory must be writeable)");
+	  $CommonLib->printLog("CacheDirectoryStore not exist.	Please set the variable CacheDirectoryStore into httpd.conf, (the directory must be writeable)");
 	  ModPerl::Util::exit();      
   }
   my $cacheSystem = new Cache::FileBackend( $cachedirectorystore, 3, 000 );
 
-sub Data {
-    my $_sec;
-	my $_min;
-	my $_hour;
-	my $_mday;
-	my $_day;
-	my $_mon;
-	my $_year;
-	my $_wday;
-	my $_yday;
-	my $_isdst;
-	my $_data;
-	($_sec,$_min,$_hour,$_mday,$_mon,$_year,$_wday,$_yday,$_isdst) = localtime(time);
-	$_mon=$_mon+1;
-	$_year=substr($_year,1);
-	$_mon=&correct_number($_mon);
-	$_mday=&correct_number($_mday);
-	$_hour=&correct_number($_hour);
-	$_min=&correct_number($_min);
-	$_sec=&correct_number($_sec);
-	$_data="$_mday/$_mon/$_year - $_hour:$_min:$_sec";
-    return $_data;
-}
-sub correct_number {
-	my ($number) = @_;
-	if ($number < 10) {
-		$number="0$number";
-	} 
-	return $number;
-}
-sub printLog {
-	my ($info) = @_;
-	my $data=Data();
-	print "$data - $info\n";
-}  
+
   sub handler {
       my $f = shift;
       my $query_string=$f->r->args;

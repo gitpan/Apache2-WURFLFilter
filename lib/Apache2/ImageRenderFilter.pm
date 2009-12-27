@@ -13,6 +13,7 @@ package Apache2::ImageRenderFilter;
   
   use strict; 
   use warnings; 
+  use Apache2::AMFCommonLib ();
   
   use Apache2::RequestRec ();
   use Apache2::RequestUtil ();
@@ -31,7 +32,8 @@ package Apache2::ImageRenderFilter;
   # 
 
   use vars qw($VERSION);
-  $VERSION= "2.20a";
+  $VERSION= "2.21";
+  my $CommonLib = new Apache2::AMFCommonLib ();
   my %Capability;
   my %Array_fb;
   my %Array_id;
@@ -78,12 +80,12 @@ package Apache2::ImageRenderFilter;
   # Check if MOBILE_HOME is setting in apache httpd.conf file for example:
   # PerlSetEnv MOBILE_HOME <apache_directory>/MobileFilter
   #
-  printLog("---------------------------------------------------------------------------"); 
-  printLog("ImageRenderFilter Version $VERSION");
+  $CommonLib->printLog("---------------------------------------------------------------------------"); 
+  $CommonLib->printLog("ImageRenderFilter Version $VERSION");
   if ($ENV{MOBILE_HOME}) {
 	  &loadConfigFile();
   } else {
-	  printLog("MOBILE_HOME not exist.	Please set the variable MOBILE_HOME into httpd.conf");
+	  $CommonLib->printLog("MOBILE_HOME not exist.	Please set the variable MOBILE_HOME into httpd.conf");
 	  ModPerl::Util::exit();
   }
 sub Data {
@@ -130,15 +132,15 @@ sub loadConfigFile {
 	     my $r_id;
 	     my $dummy;
 	      	#The filter
-	      	printLog("ResizeImageDirectory: Start read configuration from httpd.conf");
+	      	$CommonLib->printLog("ResizeImageDirectory: Start read configuration from httpd.conf");
 	      	 if ($ENV{ResizeImageDirectory}) {
 				$resizeimagedirectory=$ENV{ResizeImageDirectory};
-				printLog("ResizeImageDirectory is: $resizeimagedirectory");
+				$CommonLib->printLog("ResizeImageDirectory is: $resizeimagedirectory");
 			 } else {
-			    printLog("ERROR: ResizeImageDirectory parameter must be setted");
+			    $CommonLib->printLog("ERROR: ResizeImageDirectory parameter must be setted");
 			    ModPerl::Util::exit();
 			 }
-	    printLog("Finish loading  parameter");
+	    $CommonLib->printLog("Finish loading  parameter");
 }
 sub handler    {
       my $f = shift;
@@ -259,7 +261,7 @@ sub handler    {
   1; 
 =head1 NAME
 
-Apache2::ImageRenderFilter - used to resize images on the fly to adapt to the screen size of the mobile device
+Apache2::ImageRenderFilter - Used to resize images on the fly to adapt to the screen size of the mobile device
 
 
 =head1 COREQUISITES

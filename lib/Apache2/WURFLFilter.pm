@@ -12,6 +12,7 @@ package Apache2::WURFLFilter;
   
   use strict; 
   use warnings; 
+  use Apache2::AMFCommonLib ();  
   
   use Apache2::RequestRec ();
   use Apache2::RequestUtil ();
@@ -31,7 +32,9 @@ package Apache2::WURFLFilter;
   # 
 
   use vars qw($VERSION);
-  $VERSION= "2.20a";
+  $VERSION= "2.21";
+  my $CommonLib = new Apache2::AMFCommonLib ();
+ 
   my %Capability;
   my %Array_fb;
   my %Array_id;
@@ -40,7 +43,6 @@ package Apache2::WURFLFilter;
 
   my %PatchArray_id;
   my %MobileArray;
-  
   $MobileArray{'mobile'}='mobile';
   $MobileArray{'symbian'}='mobile';
   $MobileArray{'midp'}='mobile';
@@ -66,10 +68,10 @@ package Apache2::WURFLFilter;
   my $cookiecachesystem="false";
   my $WURFLVersion="unknown";  
   my $cachedirectorystore="/tmp";
-  printLog("---------------------------------------------------------------------------"); 
-  printLog("-------                 APACHE MOBILE FILTER V$VERSION                  -------");
-  printLog("---------------------------------------------------------------------------"); 
-  printLog("WURFLFilter module Version $VERSION");
+  $CommonLib->printLog("---------------------------------------------------------------------------"); 
+  $CommonLib->printLog("-------                 APACHE MOBILE FILTER V$VERSION                  -------");
+  $CommonLib->printLog("---------------------------------------------------------------------------"); 
+  $CommonLib->printLog("WURFLFilter module Version $VERSION");
   if ($ENV{ResizeImageDirectory}) {
 	  $Capability{'max_image_width'}="max_image_width";
 	  $Capability{'max_image_height'}="max_image_width"; 
@@ -91,9 +93,9 @@ package Apache2::WURFLFilter;
   #
   if ($ENV{CacheDirectoryStore}) {
 	$cachedirectorystore=$ENV{CacheDirectoryStore};
-	printLog("CacheDirectoryStore is: $cachedirectorystore");
+	$CommonLib->printLog("CacheDirectoryStore is: $cachedirectorystore");
   } else {
-	  printLog("CacheDirectoryStore not exist.	Please set the variable CacheDirectoryStore into httpd.conf, (the directory must be writeable)");
+	  $CommonLib->printLog("CacheDirectoryStore not exist.	Please set the variable CacheDirectoryStore into httpd.conf, (the directory must be writeable)");
 	  ModPerl::Util::exit();      
   }   
   #
@@ -103,7 +105,7 @@ package Apache2::WURFLFilter;
   $cacheSystem->store( 'wurfl-id', 'device_not_found', "id=device_not_found&device=false&device_claims_web_support=true&is_wireless_device=false");
   if ($cacheSystem->restore('wurfl-conf','ver')) {
   } else {
-            printLog('Create new wurf-con store');
+            $CommonLib->printLog('Create new wurf-con store');
       	    $cacheSystem->store('wurfl-conf', 'ver', 'null');
 	        $cacheSystem->store('wurfl-conf', 'caplist', 'null');
 	        $cacheSystem->store('wurfl-conf', 'listall', 'null');
@@ -115,7 +117,7 @@ package Apache2::WURFLFilter;
   if ($ENV{MOBILE_HOME}) {
 	  &loadConfigFile("$ENV{MOBILE_HOME}/wurfl.xml");
   } else {
-	  printLog("MOBILE_HOME not exist.	Please set the variable MOBILE_HOME into httpd.conf");
+	  $CommonLib->printLog("MOBILE_HOME not exist.	Please set the variable MOBILE_HOME into httpd.conf");
 	  ModPerl::Util::exit();
   }
   
@@ -130,15 +132,15 @@ sub loadConfigFile {
 	     my $r_id;
 	     my $dummy;
 	      	#The filter
-	      	printLog("Start read configuration from httpd.conf");
+	      	$CommonLib->printLog("Start read configuration from httpd.conf");
 	
 	      	 if ($ENV{WurflNetDownload}) {
 				$wurflnetdownload=$ENV{WurflNetDownload};
-				printLog("WurflNetDownload is: $wurflnetdownload");
+				$CommonLib->printLog("WurflNetDownload is: $wurflnetdownload");
 			 }	
 	      	 if ($ENV{DownloadWurflURL}) {
 				$downloadwurflurl=$ENV{DownloadWurflURL};
-				printLog("DownloadWurflURL is: $downloadwurflurl");
+				$CommonLib->printLog("DownloadWurflURL is: $downloadwurflurl");
 			 }	
 	      	 if ($ENV{CapabilityList}) {
 				my @dummycapability = split(/,/, $ENV{CapabilityList});
@@ -147,47 +149,46 @@ sub loadConfigFile {
 				         $listall="true";
 				      }
 				      $Capability{$dummy}=$dummy;
-				      printLog("CapabilityList is: $dummy");
+				      $CommonLib->printLog("CapabilityList is: $dummy");
 				}
 			 }	
 	             
 	      	 if ($ENV{LoadWebPatch}) {
 				$loadwebpatch=$ENV{LoadWebPatch};
-				printLog("LoadWebPatch is: $loadwebpatch");
+				$CommonLib->printLog("LoadWebPatch is: $loadwebpatch");
 			 }	
 	      	 if ($ENV{PatchWurflNetDownload}) {
 				$patchwurflnetdownload=$ENV{PatchWurflNetDownload};
-				printLog("PatchWurflNetDownload is: $patchwurflnetdownload");
+				$CommonLib->printLog("PatchWurflNetDownload is: $patchwurflnetdownload");
 			 }	
 	      	 if ($ENV{PatchWurflUrl}) {
 				$patchwurflurl=$ENV{PatchWurflUrl};
-				printLog("PatchWurflUrl is: $patchwurflurl");
+				$CommonLib->printLog("PatchWurflUrl is: $patchwurflurl");
 			 }	
 
 			 if ($ENV{CookieCacheSystem}) {
 				$cookiecachesystem=$ENV{CookieCacheSystem};
-				printLog("CookieCacheSystem is: $cookiecachesystem");
+				$CommonLib->printLog("CookieCacheSystem is: $cookiecachesystem");
 			 }	
 	
 
-	    printLog("Finish loading  parameter");
-		printLog("---------------------------------------------------------------------------"); 
+	    $CommonLib->printLog("Finish loading  parameter");
+		$CommonLib->printLog("---------------------------------------------------------------------------"); 
 	    if ($wurflnetdownload eq "true") {
-	        printLog("Start process downloading  WURFL.xml from $downloadwurflurl");
-	        my $data = Data();
-	        printLog ("Test the  URL");
+	        $CommonLib->printLog("Start process downloading  WURFL.xml from $downloadwurflurl");
+		        $CommonLib->printLog ("Test the  URL");
 	        my ($content_type, $document_length, $modified_time, $expires, $server) = head($downloadwurflurl);
 	        if ($content_type eq "") {
-   		        printLog("Couldn't get $downloadwurflurl.");
+   		        $CommonLib->printLog("Couldn't get $downloadwurflurl.");
 		   		ModPerl::Util::exit();
 	        } else {
-	            printLog("The URL is correct");
-	            printLog("The size of document wurf file: $document_length bytes");	       
+	            $CommonLib->printLog("The URL is correct");
+	            $CommonLib->printLog("The size of document wurf file: $document_length bytes");	       
 	        }
 	        
 	        if ($content_type eq 'application/zip') {
-	              printLog("The file is a zip file.");
-	              printLog ("Start downloading");
+	              $CommonLib->printLog("The file is a zip file.");
+	              $CommonLib->printLog ("Start downloading");
 				  my @dummypairs = split(/\//, $downloadwurflurl);
 				  my ($ext_zip) = $downloadwurflurl =~ /\.(\w+)$/;
 				  my $filezip=$dummypairs[-1];
@@ -197,17 +198,13 @@ sub loadConfigFile {
 				  my $output="$tmp_dir/tmp_wurfl.xml";
 				  unzip $filezip => $output 
 						or die "unzip failed: $UnzipError\n";
-					if (open (IN,"$output")) {
-					while (<IN>) {
-					     $r_id=parseWURFLFile($_,$r_id);
-					}
-					close IN;			  
-					} else {
-					     printLog("Error open file:$output");
-					     ModPerl::Util::exit();
-					}
+					#
+					# call parseWURFLFile
+					#
+					callparseWURFLFile($output);
+
 			} else {
-				printLog("The file is a xml file.");
+				$CommonLib->printLog("The file is a xml file.");
 			    my $content = get ($downloadwurflurl);
 				my @rows = split(/\n/, $content);
 				my $row;
@@ -216,11 +213,11 @@ sub loadConfigFile {
 					$r_id=parseWURFLFile($row,$r_id);
 				}
 			}
-			printLog("Finish downloading WURFL from $downloadwurflurl");
+			$CommonLib->printLog("Finish downloading WURFL from $downloadwurflurl");
 
 	    } else {
 			if (-e "$fileWurfl") {
-					printLog("Start loading  WURFL.xml");
+					$CommonLib->printLog("Start loading  WURFL.xml");
 					if (open (IN,"$fileWurfl")) {
 						while (<IN>) {
 							 $r_id=parseWURFLFile($_,$r_id);
@@ -228,11 +225,11 @@ sub loadConfigFile {
 						}
 						close IN;
 					} else {
-					    printLog("Error open file:$fileWurfl");
+					    $CommonLib->printLog("Error open file:$fileWurfl");
 					    ModPerl::Util::exit();
 					}
 			} else {
-			  printLog("File $fileWurfl not found");
+			  $CommonLib->printLog("File $fileWurfl not found");
 			  ModPerl::Util::exit();
 			}
 		}
@@ -242,19 +239,19 @@ sub loadConfigFile {
 		#
 		if ($loadwebpatch eq 'true') {
 			if ($patchwurflnetdownload eq "true") {
-				printLog("Start downloading patch WURFL from $patchwurflurl");
+				$CommonLib->printLog("Start downloading patch WURFL from $patchwurflurl");
 			    my ($content_type, $document_length, $modified_time, $expires, $server) = head($patchwurflurl);
 		        if ($content_type eq "") {
-	   		        printLog("Couldn't get $patchwurflurl.");
+	   		        $CommonLib->printLog("Couldn't get $patchwurflurl.");
 			   		ModPerl::Util::exit();
 		        } else {
-		            printLog("The URL for download patch WURFL is correct");
-		            printLog("The size of document is: $document_length bytes");	       
+		            $CommonLib->printLog("The URL for download patch WURFL is correct");
+		            $CommonLib->printLog("The size of document is: $document_length bytes");	       
 		        }
 				my $content = get ($patchwurflurl);
-				printLog("Finish downloading  WURFL.xml");
+				$CommonLib->printLog("Finish downloading  WURFL.xml");
 				if ($content eq "") {
-					printLog("Couldn't get patch $patchwurflurl.");
+					$CommonLib->printLog("Couldn't get patch $patchwurflurl.");
 					ModPerl::Util::exit();
 				}
 				my @rows = split(/\n/, $content);
@@ -266,7 +263,7 @@ sub loadConfigFile {
 	         } else {
 				my $filePatch="$ENV{MOBILE_HOME}/web_browsers_patch.xml";
 				if (-e "$filePatch") {
-						printLog("Start loading Web Patch File of WURFL");
+						$CommonLib->printLog("Start loading Web Patch File of WURFL");
 						if (open (IN,"$filePatch")) {
 							while (<IN>) {
 								 $r_id=parsePatchFile($_,$r_id);
@@ -274,11 +271,11 @@ sub loadConfigFile {
 							}
 							close IN;
 						} else {
-							printLog("Error open file:$filePatch");
+							$CommonLib->printLog("Error open file:$filePatch");
 							ModPerl::Util::exit();
 						}
 				} else {
-				  printLog("File patch $filePatch not found");
+				  $CommonLib->printLog("File patch $filePatch not found");
 				  ModPerl::Util::exit();
 				}
 			}
@@ -286,15 +283,15 @@ sub loadConfigFile {
 		my $arrLen = scalar %Array_fb;
 		($arrLen,$dummy)= split(/\//, $arrLen);
 		if ($arrLen == 0) {
-		     printLog("Error the file probably is not a wurfl file, control the url or path");
-		     printLog("Control also if the file is compress file, and DownloadZipFile parameter is seted false");
+		     $CommonLib->printLog("Error the file probably is not a wurfl file, control the url or path");
+		     $CommonLib->printLog("Control also if the file is compress file, and DownloadZipFile parameter is seted false");
 		     ModPerl::Util::exit();
 		}
-        printLog("WURFL version: $WURFLVersion");
+        $CommonLib->printLog("WURFL version: $WURFLVersion");
         if ($cacheSystem->restore('wurfl-conf', 'ResizeImageDirectory') ne $resizeimagedirectory||$cacheSystem->restore('wurfl-conf', 'DownloadWurflURL') ne $downloadwurflurl||$cacheSystem->restore('wurfl-conf', 'FullBrowserUrl') ne $fullbrowserurl||$cacheSystem->restore('wurfl-conf', 'RedirectTranscoderUrl') ne $redirecttranscoderurl || $cacheSystem->restore('wurfl-conf', 'ver') ne $WURFLVersion || $cacheSystem->restore('wurfl-conf', 'caplist') ne $ENV{CapabilityList}||$cacheSystem->restore('wurfl-conf', 'listall') ne $listall) {
-            printLog("********************************************************************************************************");
-            printLog("* This is a new version of WURFL or you change some parameter value, now the old cache must be deleted *");
-            printLog("********************************************************************************************************");
+            $CommonLib->printLog("********************************************************************************************************");
+            $CommonLib->printLog("* This is a new version of WURFL or you change some parameter value, now the old cache must be deleted *");
+            $CommonLib->printLog("********************************************************************************************************");
 	        $cacheSystem->store('wurfl-conf', 'ver', $WURFLVersion);
 	        $cacheSystem->store('wurfl-conf', 'caplist', $ENV{CapabilityList});
 	        $cacheSystem->store('wurfl-conf', 'listall', $listall);
@@ -306,8 +303,21 @@ sub loadConfigFile {
 	        $cacheSystem->delete_namespace( 'WURFL-id' );       
 	        $cacheSystem->delete_namespace( 'WURFL-ua' );       
         }
-        printLog("This version of WURFL has $arrLen UserAgent");
-        printLog("End loading  WURFL.xml");
+        $CommonLib->printLog("This version of WURFL has $arrLen UserAgent");
+        $CommonLib->printLog("End loading  WURFL.xml");
+}
+sub callparseWURFLFile {
+	 my ($output) = @_;
+	 my $r_id;
+	if (open (IN,"$output")) {
+		while (<IN>) {
+			$r_id=parseWURFLFile($_,$r_id);
+		}
+		close IN;			  
+	} else {
+			$CommonLib->printLog("Error open file:$output");
+			ModPerl::Util::exit();
+	}
 }
 sub parseWURFLFile {
          my ($record,$val) = @_;
@@ -339,7 +349,7 @@ sub parseWURFLFile {
 					$Array_fb{"$id"}=$fb;
 				 }
 				 if (($ua) && ($id)) {
-				         my %ParseUA=GetMultipleUa($ua);
+				         my %ParseUA=$CommonLib->GetMultipleUa($ua);
 				         my $pair;
 				         my $arrUaLen = scalar %ParseUA;
 				         my $contaUA=0;
@@ -362,7 +372,7 @@ sub parseWURFLFile {
 			}
 		 }
 		 if ($record =~ /\<ver/o) {
-		     $WURFLVersion=extValueTag("ver",$record);
+		     $WURFLVersion=$CommonLib->extValueTag("ver",$record);
 		 }
 		 return $id;
 
@@ -415,51 +425,7 @@ sub parsePatchFile {
 		 return $id;
 
 }
-sub extValueTag {
-   my ($tag,$string) = @_;
-   my $a_tag="\<$tag";
-   my $b_tag="\<\/$tag\>";
-   my $finish=index($string,"\>") + 1;
-   my $x=$finish;
-   my $y=index($string,$b_tag);
-   my $return_tag=substr($string,$x,$y - $x);  
-   return $return_tag;
-}
-sub Data {
-    my $_sec;
-	my $_min;
-	my $_hour;
-	my $_mday;
-	my $_day;
-	my $_mon;
-	my $_year;
-	my $_wday;
-	my $_yday;
-	my $_isdst;
-	my $_data;
-	($_sec,$_min,$_hour,$_mday,$_mon,$_year,$_wday,$_yday,$_isdst) = localtime(time);
-	$_mon=$_mon+1;
-	$_year=substr($_year,1);
-	$_mon=&correct_number($_mon);
-	$_mday=&correct_number($_mday);
-	$_hour=&correct_number($_hour);
-	$_min=&correct_number($_min);
-	$_sec=&correct_number($_sec);
-	$_data="$_mday/$_mon/$_year - $_hour:$_min:$_sec";
-    return $_data;
-}
-sub correct_number {
-  my ($number) = @_;
-  if ($number < 10) {
-      $number="0$number";
-  } 
-  return $number;
-}
-sub printLog {
-	my ($info) = @_;
-	my $data=Data();
-	print "$data - $info\n";
-}
+
 sub FallBack {
   my ($idToFind) = @_;
   my $dummy_id;
@@ -499,7 +465,7 @@ sub IdentifyUAMethod {
   my $ua_toMatch;
   my $near_toFind=100;
   my $near_toMatch;
-  my %ArrayUAType=GetMultipleUa($UserAgent);  
+  my %ArrayUAType=$CommonLib->GetMultipleUa($UserAgent);  
   foreach $pair (reverse sort { $a <=> $b }  keys	 %ArrayUAType)
   {
       my $dummy=$ArrayUAType{$pair};
@@ -526,72 +492,8 @@ sub IdentifyPCUAMethod {
   }
   return $id_find;
 }
-sub GetMultipleUa {
-  my ($UserAgent) = @_;
-  my %ArrayPM;
-  my $pair;
-  my $ind=0;
-  my $pairs3;
-  my %ArrayUAparse;  
-  my @pairs = split(/\ /, $UserAgent);
-  foreach $pair (@pairs)
-  { 
-     if ($ind==0) {
-	     if ($pair =~ /\//o) {     	
-	     	my @pairs2 = split(/\//, $pair);
-    	  	foreach $pairs3 (@pairs2) {
-			     if ($ind==0) {
-			       $ind=$ind+1;
-			       $ArrayUAparse{$ind}=$pairs3;
-		 	     } else {
-		 	       $ind=$ind+1;
-		    	   $ArrayUAparse{$ind}="$ArrayUAparse{$ind-1}\/$pairs3";
-		    	 }
-     	 	}
-     	} else {
-	      $ind=$ind+1;
-     	  $ArrayUAparse{$ind}="$pair";
-     	}
-     } else {
-        if ($pair =~ /\//o) {
-          my $ind2=0;
-          my @pairs2 = split(/\//, $pair);
-          foreach $pairs3 (@pairs2) {
-			     if ($ind2==0) {
-			       $ind=$ind+1;
-			       $ind2=1;
-			       $ArrayUAparse{$ind}="$ArrayUAparse{$ind-1} $pairs3";
-		 	     } else {
-		 	       $ind=$ind+1;
-		    	   $ArrayUAparse{$ind}="$ArrayUAparse{$ind-1}\/$pairs3";
-		    	 }             
-          }
-		} else {
-	    	$ind=$ind+1;
-     		$ArrayUAparse{$ind}="$ArrayUAparse{$ind-1} $pair";
-     	}
-     }
-  }
 
-  return %ArrayUAparse;
 
-}
-sub readCookie {
-    my ($cookie_search) = @_;
-    my $param_tofound;
-    my $string_tofound;
-    my $value="";
-    my $id_return="";
-    my @pairs = split(/;/, $cookie_search);
-    my $name;
-    foreach $param_tofound (@pairs) {
-       ($string_tofound,$value)=split(/=/, $param_tofound);
-       if ($string_tofound eq "amf") {
-           $id_return=$value;
-       }
-    }   
-    return $id_return;
-}
 sub handler {
     my $f = shift;  
     my $capability2;
@@ -628,7 +530,7 @@ sub handler {
 		$mobile=1;
 	}
     my $cookie = $f->headers_in->{Cookie} || '';
-    $id=readCookie($cookie);
+    $id=$CommonLib->readCookie($cookie);
     if ($cacheSystem->restore( 'wurfl-ua', $user_agent )) {
           #
           # cookie is not empty so I try to read in memory cache on my httpd cache

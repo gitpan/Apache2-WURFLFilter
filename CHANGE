@@ -1,3 +1,7 @@
+WURFLFilter 2.21
+Correct Internal Redirect in AMFSwitcher, thanks to Alison
+Created a new module called AMFCommonLib.pm to optimize and better maintenance of the code
+
 WURFLFilter 2.20a
 Correct the documentation into AMFDeviceDetection
 

@@ -13,6 +13,8 @@ package Apache2::AMFSwitcher;
   
   use strict; 
   use warnings; 
+  use Apache2::AMFCommonLib ();
+  
   use Apache2::RequestRec ();
   use Apache2::RequestUtil ();
   use Apache2::SubRequest ();
@@ -24,58 +26,40 @@ package Apache2::AMFSwitcher;
   use IO::Uncompress::Unzip qw(unzip $UnzipError) ;
   use constant BUFF_LEN => 1024;
   use vars qw($VERSION);
-  $VERSION= "2.20a";
+  $VERSION= "2.21";
   #
   # Define the global environment
   #
+  my $CommonLib = new Apache2::AMFCommonLib ();
   my $mobileversionurl="none";
   my $fullbrowserurl="none";
   my $redirecttranscoder="true";
   my $redirecttranscoderurl="none";
-  printLog("---------------------------------------------------------------------------"); 
-  printLog("AMFSwitcher Version $VERSION");
+  my %ArrayPath;
+  $ArrayPath{1}='none';
+  $ArrayPath{2}='none';
+  $ArrayPath{3}='none';
+  $CommonLib->printLog("---------------------------------------------------------------------------"); 
+  $CommonLib->printLog("AMFSwitcher Version $VERSION");
   if ($ENV{MOBILE_HOME}) {
-	  &loadConfigFile();
   } else {
-	  printLog("MOBILE_HOME not exist.	Please set the variable MOBILE_HOME into httpd.conf");
-	  printLog("Pre-Requisite: WURFLFilter must be activated");
+	  $CommonLib->printLog("MOBILE_HOME not exist.	Please set the variable MOBILE_HOME into httpd.conf");
+	  $CommonLib->printLog("Pre-Requisite: WURFLFilter must be activated");
 	  ModPerl::Util::exit();
   }
-sub Data {
-    my $_sec;
-	my $_min;
-	my $_hour;
-	my $_mday;
-	my $_day;
-	my $_mon;
-	my $_year;
-	my $_wday;
-	my $_yday;
-	my $_isdst;
-	my $_data;
-	($_sec,$_min,$_hour,$_mday,$_mon,$_year,$_wday,$_yday,$_isdst) = localtime(time);
-	$_mon=$_mon+1;
-	$_year=substr($_year,1);
-	$_mon=&correct_number($_mon);
-	$_mday=&correct_number($_mday);
-	$_hour=&correct_number($_hour);
-	$_min=&correct_number($_min);
-	$_sec=&correct_number($_sec);
-	$_data="$_mday/$_mon/$_year - $_hour:$_min:$_sec";
-    return $_data;
-}
-sub correct_number {
-	my ($number) = @_;
-	if ($number < 10) {
-		$number="0$number";
-	} 
-	return $number;
-}
-sub printLog {
-	my ($info) = @_;
-	my $data=Data();
-	print "$data - $info\n";
-}
+  if ($ENV{LoadWebPatch}) {
+      if ($ENV{LoadWebPatch} eq 'true') {
+			  &loadConfigFile();
+      } else {
+	  	$CommonLib->printLog("LoadWebPatch not exist.	Please set the variable LoadWebPatch must be set with true value");
+	  	$CommonLib->printLog("Pre-Requisite: WURFLFilter must be activated");
+	  	ModPerl::Util::exit();
+      }
+  } else {
+	  $CommonLib->printLog("LoadWebPatch must be set.	Please set the variable LoadWebPatch into httpd.conf with boolean value (true o false)");
+	  $CommonLib->printLog("Pre-Requisite: WURFLFilter must be activated");
+	  ModPerl::Util::exit();
+  }
 sub loadConfigFile {
 	my $null="";
 	my $null2="";
@@ -84,21 +68,24 @@ sub loadConfigFile {
 	my $capability;
 	my $r_id;
 	my $dummy;
-	printLog("AMFSwitcher: Start read configuration from httpd.conf");
+	$CommonLib->printLog("AMFSwitcher: Start read configuration from httpd.conf");
 	if ($ENV{MobileVersionUrl}) {
 		$mobileversionurl=$ENV{MobileVersionUrl};
-		printLog("MobileVersionUrl is: $mobileversionurl");
+		$ArrayPath{1}=$ENV{MobileVersionUrl};
+		$CommonLib->printLog("MobileVersionUrl is: $mobileversionurl");
 	}	
 	if ($ENV{FullBrowserUrl}) {
 		$fullbrowserurl=$ENV{FullBrowserUrl};
-		printLog("FullBrowserUrl is: $fullbrowserurl");
+		$ArrayPath{2}=$ENV{FullBrowserUrl};
+		$CommonLib->printLog("FullBrowserUrl is: $fullbrowserurl");
 	}		
 	if ($ENV{RedirectTranscoderUrl}) {
 		$redirecttranscoderurl=$ENV{RedirectTranscoderUrl};
+		$ArrayPath{3}=$ENV{RedirectTranscoderUrl};
 		$redirecttranscoder="true";
-		printLog("RedirectTranscoderUrl is: $redirecttranscoderurl");		
+		$CommonLib->printLog("RedirectTranscoderUrl is: $redirecttranscoderurl");		
 	}	
-	printLog("Finish loading  parameter");
+	$CommonLib->printLog("Finish loading  parameter");
 }
 sub handler    {
     my $f = shift;
@@ -108,6 +95,9 @@ sub handler    {
     my $is_transcoder="null";
     my $location="none";
     my $return_value=Apache2::Const::DECLINED;
+    my $device_type=1;
+    my $no_redirect=1;
+    my $uri=$f->uri();
     if ($f->pnotes('device_claims_web_support')) {      
     	$device_claims_web_support=$f->pnotes('device_claims_web_support')
     }
@@ -117,32 +107,46 @@ sub handler    {
     if ($f->pnotes('is_transcoder')) {
     	$is_transcoder=$f->pnotes('is_transcoder');
     }
-	if ($fullbrowserurl ne 'none' && $device_claims_web_support eq 'true' && $is_wireless_device eq 'false') {
-		$location=$fullbrowserurl;      		
+	if ($device_claims_web_support eq 'true' && $is_wireless_device eq 'false') {
+		if ($fullbrowserurl ne 'none') {
+			$location=$fullbrowserurl;
+		} 
+		$device_type=2;     		
 	} else {
 		if ($mobileversionurl ne 'none') {
 			$location=$mobileversionurl;
 		}
+		$device_type=1;     		
 	}
-    if ($redirecttranscoderurl ne 'none' && $is_transcoder eq 'true') {
-		$location=$redirecttranscoderurl;
+    if ($is_transcoder eq 'true') {
+		if ($redirecttranscoderurl ne 'none') {
+			$location=$redirecttranscoderurl;
+		}
+		$device_type=3;
     }
-	if ($location ne "none") {
-		if (substr($location,0,5) eq "http:") {
-			$f->headers_out->set(Location => $location);
-			$f->status(Apache2::Const::REDIRECT); 
-			$return_value=Apache2::Const::REDIRECT;
-		} else {
-			$f->internal_redirect($location);
-		} 
-	}
+    if ($ArrayPath{$device_type} eq substr($uri,0,length($ArrayPath{$device_type}))) {
+    	$no_redirect=0;
+    }
+	if ($location ne "none" ) {
+		    if (substr ($location,0,5) eq "http:") { 
+				$f->headers_out->set(Location => $location);
+				$f->status(Apache2::Const::REDIRECT); 
+				$return_value=Apache2::Const::REDIRECT;
+		    } else {
+		        if ($no_redirect==1) {
+					$f->headers_out->set(Location => $location);
+					$f->status(Apache2::Const::REDIRECT); 
+					$return_value=Apache2::Const::REDIRECT;		        
+		        }
+		    }
+	} 
 	return $return_value;
 } 
 
   1; 
 =head1 NAME
 
-Apache2::AMFSwitcher - used to switch the device to the apropriate content (mobile, fullbrowser or for transcoder)
+Apache2::AMFSwitcher - Used to switch the device to the apropriate content (mobile, fullbrowser or for transcoder)
 
 
 =head1 COREQUISITES

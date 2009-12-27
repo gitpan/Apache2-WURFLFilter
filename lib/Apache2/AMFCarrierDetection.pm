@@ -13,6 +13,8 @@ package Apache2::AMFCarrierDetection;
   
   use strict; 
   use warnings; 
+  use Apache2::AMFCommonLib ();
+  
   use Apache2::RequestRec ();
   use Apache2::RequestUtil ();
   use Apache2::SubRequest ();
@@ -25,56 +27,23 @@ package Apache2::AMFCarrierDetection;
   use IO::Uncompress::Unzip qw(unzip $UnzipError) ;
   use constant BUFF_LEN => 1024;
   use vars qw($VERSION);
-  $VERSION= "2.20a";
+  $VERSION= "2.21";
   #
   # Define the global environment
   #
+  my $CommonLib = new Apache2::AMFCommonLib ();
   my $filecarriernetdownload="none";
   my %CarrierIP;
-  printLog("---------------------------------------------------------------------------"); 
-  printLog("AMFCarrierDetection Version $VERSION");
+  $CommonLib->printLog("---------------------------------------------------------------------------"); 
+  $CommonLib->printLog("AMFCarrierDetection Version $VERSION");
   if ($ENV{MOBILE_HOME}) {
 	  &loadConfigFile();
   } else {
-	  printLog("MOBILE_HOME not exist.	Please set the variable MOBILE_HOME into httpd.conf");
-	  printLog("Pre-Requisite: WURFLFilter must be activated");
+	  $CommonLib->printLog("MOBILE_HOME not exist.	Please set the variable MOBILE_HOME into httpd.conf");
+	  $CommonLib->printLog("Pre-Requisite: WURFLFilter must be activated");
 	  ModPerl::Util::exit();
   }
-sub Data {
-    my $_sec;
-	my $_min;
-	my $_hour;
-	my $_mday;
-	my $_day;
-	my $_mon;
-	my $_year;
-	my $_wday;
-	my $_yday;
-	my $_isdst;
-	my $_data;
-	($_sec,$_min,$_hour,$_mday,$_mon,$_year,$_wday,$_yday,$_isdst) = localtime(time);
-	$_mon=$_mon+1;
-	$_year=substr($_year,1);
-	$_mon=&correct_number($_mon);
-	$_mday=&correct_number($_mday);
-	$_hour=&correct_number($_hour);
-	$_min=&correct_number($_min);
-	$_sec=&correct_number($_sec);
-	$_data="$_mday/$_mon/$_year - $_hour:$_min:$_sec";
-    return $_data;
-}
-sub correct_number {
-	my ($number) = @_;
-	if ($number < 10) {
-		$number="0$number";
-	} 
-	return $number;
-}
-sub printLog {
-	my ($info) = @_;
-	my $data=Data();
-	print "$data - $info\n";
-}
+
 sub loadConfigFile {
 	my $dummy;
 	my $carrier;
@@ -87,29 +56,29 @@ sub loadConfigFile {
 	my $total_carrier_ip=0;
 	my $ip2;
 	
-	printLog("AMFCarrierDetection: Start read configuration from httpd.conf");
+	$CommonLib->printLog("AMFCarrierDetection: Start read configuration from httpd.conf");
 	if ($ENV{CarrierNetDownload}) {
 		$carriernetdownload=$ENV{CarrierNetDownload};
-		printLog("CarrierNetDownload is: $carriernetdownload");
+		$CommonLib->printLog("CarrierNetDownload is: $carriernetdownload");
 	}	
 	if (($ENV{CarrierUrl}) && $carriernetdownload eq 'true') {
 			$carrierurl=$ENV{CarrierUrl};
-			printLog("CarrierUrl is: $carrierurl");
+			$CommonLib->printLog("CarrierUrl is: $carrierurl");
 	} 
 	if ($carriernetdownload eq "true") {
-				printLog("Start downloading Carrier DB from $carrierurl");
+				$CommonLib->printLog("Start downloading Carrier DB from $carrierurl");
 			    my ($content_type, $document_length, $modified_time, $expires, $server) = head($carrierurl);
 		        if ($content_type eq "") {
-	   		        printLog("Couldn't get $carrierurl.");
+	   		        $CommonLib->printLog("Couldn't get $carrierurl.");
 			   		ModPerl::Util::exit();
 		        } else {
-		            printLog("The URL for download Carrier DB is correct");
-		            printLog("The size of document is: $document_length bytes");	       
+		            $CommonLib->printLog("The URL for download Carrier DB is correct");
+		            $CommonLib->printLog("The size of document is: $document_length bytes");	       
 		        }
 				my $content = get ($carrierurl);
-				printLog("Finish downloading  Carrier DB");
+				$CommonLib->printLog("Finish downloading  Carrier DB");
 				if ($content eq "") {
-					printLog("Couldn't get Data DB from $carrierurl.");
+					$CommonLib->printLog("Couldn't get Data DB from $carrierurl.");
 					ModPerl::Util::exit();
 				}
 			    @rows = split(/\n/, $content);
@@ -122,7 +91,7 @@ sub loadConfigFile {
 	} else {
 				my $fileCarrier="$ENV{MOBILE_HOME}/carrier-data.txt";
 				if (-e "$fileCarrier") {
-						printLog("Start loading carrier-data.txt");
+						$CommonLib->printLog("Start loading carrier-data.txt");
 						if (open (IN,"$fileCarrier")) {
 							while (<IN>) {
 								 #$ip=~s/\n/-/ ;
@@ -135,16 +104,16 @@ sub loadConfigFile {
 							}
 							close IN;
 						} else {
-							printLog("Error open file:$fileCarrier");
+							$CommonLib->printLog("Error open file:$fileCarrier");
 							ModPerl::Util::exit();
 						}
 				} else {
-				  printLog("File $fileCarrier not found");
+				  $CommonLib->printLog("File $fileCarrier not found");
 				  ModPerl::Util::exit();
 				}
 	}
-	printLog("Total of Carrier IP: $total_carrier_ip");
-	printLog("Finish loading  parameter");
+	$CommonLib->printLog("Total of Carrier IP: $total_carrier_ip");
+	$CommonLib->printLog("Finish loading  parameter");
 }
 sub handler    {
     my $f = shift;
